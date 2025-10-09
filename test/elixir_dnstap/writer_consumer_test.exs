@@ -2,8 +2,8 @@ defmodule ElixirDnstap.WriterConsumerTest do
   use ExUnit.Case, async: false
 
   alias ElixirDnstap.Encoder
-  alias ElixirDnstap.Writer.File
   alias ElixirDnstap.FrameStreams
+  alias ElixirDnstap.Writer.File
   alias ElixirDnstap.WriterConsumer
 
   @test_dir "/tmp/tenbin_cache_test/writer_consumer"

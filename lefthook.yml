@@ -1,0 +1,26 @@
+pre-commit:
+  commands:
+    format:
+      run: mix format
+      fail_text: "Code formatting applied. Please review and commit the changes."
+      stage_fixed: true
+      priority: 1
+    tests:
+      run: mix test --cover
+      fail_text: "Tests failed. Please fix failing tests before committing."
+      priority: 2
+    credo:
+      run: mix credo --strict
+      fail_text: "Credo checks failed. Please fix code quality issues before committing."
+      priority: 3
+
+# Optional: Skip hooks with LEFTHOOK=0 git commit
+skip_output:
+  - meta
+  - success
+
+output:
+  - execution
+  - summary
+
+colors: true

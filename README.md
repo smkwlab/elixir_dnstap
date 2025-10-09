@@ -154,10 +154,32 @@ Sender:   ACCEPT → START → DATA* → FINISH
 
 ## Development
 
+### Setup
+
 ```bash
 # Get dependencies
 mix deps.get
 
+# Install lefthook git hooks
+lefthook install
+```
+
+### Git Hooks (Lefthook)
+
+This project uses [Lefthook](https://github.com/evilmartians/lefthook) for git hooks. On commit, the following checks are automatically run:
+
+1. `mix format` - Auto-format code
+2. `mix test --cover` - Run tests with coverage
+3. `mix credo --strict` - Check code quality
+
+To skip hooks temporarily:
+```bash
+LEFTHOOK=0 git commit -m "message"
+```
+
+### Testing and Quality
+
+```bash
 # Run tests
 mix test
 

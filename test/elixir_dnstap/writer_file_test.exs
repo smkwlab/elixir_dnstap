@@ -1,8 +1,8 @@
 defmodule ElixirDnstap.Writer.FileGenServerTest do
   use ExUnit.Case, async: false
 
-  alias ElixirDnstap.Writer.File
   alias ElixirDnstap.FrameStreams
+  alias ElixirDnstap.Writer.File
 
   @test_dir "/tmp/tenbin_cache_test/dnstap_genserver"
   @content_type "protobuf:dnstap.Dnstap"

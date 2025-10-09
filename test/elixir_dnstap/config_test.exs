@@ -180,7 +180,7 @@ defmodule ElixirDnstap.ConfigTest do
 
     test "raises when TCP port is invalid" do
       Application.put_env(:elixir_dnstap, :enabled, true)
-      Application.put_env(:elixir_dnstap, :output, type: :tcp, host: "127.0.0.1", port: 70000)
+      Application.put_env(:elixir_dnstap, :output, type: :tcp, host: "127.0.0.1", port: 70_000)
 
       assert_raise RuntimeError,
                    "DNSTap TCP configuration error: port must be between 1 and 65535, got 70000",
