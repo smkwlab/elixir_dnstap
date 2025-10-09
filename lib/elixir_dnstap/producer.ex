@@ -59,7 +59,7 @@ defmodule ElixirDnstap.Producer do
   - `{:ok, pid}` - Producer started successfully
   - `{:error, reason}` - Failed to start
   """
-  @spec start_link(keyword()) :: GenStage.on_start()
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     {gen_stage_opts, init_opts} = Keyword.split(opts, [:name])
     GenStage.start_link(__MODULE__, init_opts, gen_stage_opts)
