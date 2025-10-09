@@ -77,7 +77,7 @@ defmodule ElixirDnstapTest do
           socket_protocol
         )
 
-      assert :ok = result
+      assert result == :ok
     end
   end
 
@@ -145,7 +145,7 @@ defmodule ElixirDnstapTest do
           query_time_nsec: 123_456_789
         )
 
-      assert :ok = result
+      assert result == :ok
     end
   end
 end
