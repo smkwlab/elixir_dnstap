@@ -8,8 +8,8 @@ defmodule ElixirDnstap.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: ElixirDnstap.Worker.start_link(arg)
-      # {ElixirDnstap.Worker, arg}
+      # DNSTap message producer (GenStage)
+      {ElixirDnstap.Producer, name: ElixirDnstap.Producer}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
