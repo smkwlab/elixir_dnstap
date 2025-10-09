@@ -1,21 +1,21 @@
 defmodule ElixirDnstap.SupervisorTest do
   use ExUnit.Case, async: false
 
-  alias ElixirDnstap.Config
+  alias ElixirDnstap.Config, as: ConfigParser
   alias ElixirDnstap.Supervisor
 
   @test_dir "/tmp/tenbin_cache_test/writer_manager"
 
   setup do
     # Clean up test directory
-    File.rm_rf!(@test_dir)
+    File.rm_rf(@test_dir)
     File.mkdir_p!(@test_dir)
 
     # Start ConfigParser (required for WriterManager)
     start_supervised!(ConfigParser)
 
     on_exit(fn ->
-      File.rm_rf!(@test_dir)
+      File.rm_rf(@test_dir)
     end)
 
     :ok

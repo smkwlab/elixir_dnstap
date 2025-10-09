@@ -3,18 +3,18 @@ defmodule ElixirDnstap.WriterConsumerTest do
 
   alias ElixirDnstap.Encoder
   alias ElixirDnstap.FrameStreams
-  alias ElixirDnstap.Writer.File
+  alias ElixirDnstap.Writer.File, as: FileWriter
   alias ElixirDnstap.WriterConsumer
 
   @test_dir "/tmp/tenbin_cache_test/writer_consumer"
 
   setup do
     # Clean up test directory
-    File.rm_rf!(@test_dir)
-    File.mkdir_p!(@test_dir)
+    Elixir.File.rm_rf(@test_dir)
+    Elixir.File.mkdir_p!(@test_dir)
 
     on_exit(fn ->
-      File.rm_rf!(@test_dir)
+      Elixir.File.rm_rf(@test_dir)
     end)
 
     :ok
@@ -55,7 +55,7 @@ defmodule ElixirDnstap.WriterConsumerTest do
       assert {:noreply, [], ^state} = WriterConsumer.handle_events([test_message], self(), state)
 
       # Verify the message was written to file (FileWriter encodes to Frame Streams)
-      {:ok, content} = File.read(file_path)
+      {:ok, content} = Elixir.File.read(file_path)
 
       # Skip START frame
       {:ok, {:control, :start, _}, rest} = FrameStreams.decode_frame(content)
@@ -84,7 +84,7 @@ defmodule ElixirDnstap.WriterConsumerTest do
       assert {:noreply, [], ^state} = WriterConsumer.handle_events(messages, self(), state)
 
       # Verify all messages were written
-      {:ok, content} = File.read(file_path)
+      {:ok, content} = Elixir.File.read(file_path)
       {:ok, {:control, :start, _}, rest} = FrameStreams.decode_frame(content)
 
       # Verify 3 data frames
@@ -118,7 +118,7 @@ defmodule ElixirDnstap.WriterConsumerTest do
       {:noreply, [], ^state} = WriterConsumer.handle_events(messages, self(), state)
 
       # Verify order is preserved
-      {:ok, content} = File.read(file_path)
+      {:ok, content} = Elixir.File.read(file_path)
       {:ok, {:control, :start, _}, rest} = FrameStreams.decode_frame(content)
 
       # Verify all messages in correct order by checking query_port
@@ -143,7 +143,7 @@ defmodule ElixirDnstap.WriterConsumerTest do
       # Close the file to simulate write error
       :sys.get_state(writer_pid)
       |> Map.get(:file)
-      |> File.close()
+      |> Elixir.File.close()
 
       # Attempt to write should handle error gracefully
       message =
@@ -175,7 +175,7 @@ defmodule ElixirDnstap.WriterConsumerTest do
       assert {:noreply, [], ^state} = WriterConsumer.handle_events(events, self(), state)
 
       # Verify only valid Protocol Buffers messages were written (FileWriter encodes to Frame Streams)
-      {:ok, content} = File.read(file_path)
+      {:ok, content} = Elixir.File.read(file_path)
       {:ok, {:control, :start, _}, rest} = FrameStreams.decode_frame(content)
 
       # Check that we got 2 valid data frames
@@ -215,7 +215,7 @@ defmodule ElixirDnstap.WriterConsumerTest do
       assert time_us < 100_000
 
       # Verify all messages were written (FileWriter encodes to Frame Streams)
-      {:ok, content} = File.read(file_path)
+      {:ok, content} = Elixir.File.read(file_path)
       {:ok, {:control, :start, _}, rest} = FrameStreams.decode_frame(content)
 
       # Count data frames

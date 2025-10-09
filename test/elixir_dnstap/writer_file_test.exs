@@ -2,18 +2,18 @@ defmodule ElixirDnstap.Writer.FileGenServerTest do
   use ExUnit.Case, async: false
 
   alias ElixirDnstap.FrameStreams
-  alias ElixirDnstap.Writer.File
+  alias ElixirDnstap.Writer.File, as: FileWriter
 
   @test_dir "/tmp/tenbin_cache_test/dnstap_genserver"
   @content_type "protobuf:dnstap.Dnstap"
 
   setup do
     # Clean up test directory
-    File.rm_rf!(@test_dir)
-    File.mkdir_p!(@test_dir)
+    Elixir.File.rm_rf(@test_dir)
+    Elixir.File.mkdir_p!(@test_dir)
 
     on_exit(fn ->
-      File.rm_rf!(@test_dir)
+      Elixir.File.rm_rf(@test_dir)
     end)
 
     :ok
@@ -27,7 +27,7 @@ defmodule ElixirDnstap.Writer.FileGenServerTest do
       assert Process.alive?(pid)
 
       # Verify START frame was written
-      {:ok, content} = File.read(file_path)
+      {:ok, content} = Elixir.File.read(file_path)
 
       assert {:ok, {:control, :start, @content_type}, <<>>} =
                FrameStreams.decode_frame(content)
@@ -49,7 +49,7 @@ defmodule ElixirDnstap.Writer.FileGenServerTest do
       GenServer.stop(pid)
 
       # Verify STOP frame was written
-      {:ok, content} = File.read(file_path)
+      {:ok, content} = Elixir.File.read(file_path)
 
       # START frame
       {:ok, {:control, :start, _}, rest1} = FrameStreams.decode_frame(content)
@@ -80,7 +80,7 @@ defmodule ElixirDnstap.Writer.FileGenServerTest do
       assert :ok = FileWriter.write(message)
 
       # Read file and verify frames
-      {:ok, content} = File.read(file_path)
+      {:ok, content} = Elixir.File.read(file_path)
 
       # Skip START frame
       {:ok, {:control, :start, _}, rest} = FrameStreams.decode_frame(content)
@@ -105,7 +105,7 @@ defmodule ElixirDnstap.Writer.FileGenServerTest do
       GenServer.stop(pid)
 
       # Read and verify all frames
-      {:ok, content} = File.read(file_path)
+      {:ok, content} = Elixir.File.read(file_path)
 
       # Skip START frame
       {:ok, {:control, :start, _}, rest} = FrameStreams.decode_frame(content)
@@ -125,21 +125,21 @@ defmodule ElixirDnstap.Writer.FileGenServerTest do
 
     test "file size increases with each write (not overwritten)", %{file_path: file_path} do
       # Capture initial size (START frame)
-      initial_size = File.stat!(file_path).size
+      initial_size = Elixir.File.stat!(file_path).size
 
       # Write first message
       FileWriter.write(<<1, 2, 3>>)
-      size_after_first = File.stat!(file_path).size
+      size_after_first = Elixir.File.stat!(file_path).size
       assert size_after_first > initial_size
 
       # Write second message
       FileWriter.write(<<4, 5, 6, 7>>)
-      size_after_second = File.stat!(file_path).size
+      size_after_second = Elixir.File.stat!(file_path).size
       assert size_after_second > size_after_first
 
       # Write third message
       FileWriter.write(<<8, 9>>)
-      size_after_third = File.stat!(file_path).size
+      size_after_third = Elixir.File.stat!(file_path).size
       assert size_after_third > size_after_second
     end
   end
@@ -148,7 +148,7 @@ defmodule ElixirDnstap.Writer.FileGenServerTest do
     test "returns error if directory creation fails" do
       # Try to create file in a path where a file already exists
       existing_file = Path.join(@test_dir, "existing_file")
-      File.write!(existing_file, "content")
+      Elixir.File.write!(existing_file, "content")
 
       bad_path = Path.join([existing_file, "subdir", "test.fstrm"])
 
@@ -174,7 +174,7 @@ defmodule ElixirDnstap.Writer.FileGenServerTest do
       # Close the file manually to simulate error
       :sys.get_state(pid)
       |> Map.get(:file)
-      |> File.close()
+      |> Elixir.File.close()
 
       # Write should return error
       assert {:error, _reason} = FileWriter.write(<<1, 2, 3>>)
@@ -208,7 +208,7 @@ defmodule ElixirDnstap.Writer.FileGenServerTest do
       # Stop and verify file
       GenServer.stop(pid)
 
-      {:ok, content} = File.read(file_path)
+      {:ok, content} = Elixir.File.read(file_path)
       {:ok, {:control, :start, _}, rest} = FrameStreams.decode_frame(content)
 
       # Count data frames
