@@ -1,7 +1,9 @@
 # ElixirDnstap
 
+[![CI](https://github.com/smkwlab/elixir_dnstap/actions/workflows/elixir.yml/badge.svg)](https://github.com/smkwlab/elixir_dnstap/actions/workflows/elixir.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/elixir_dnstap.svg)](https://hex.pm/packages/elixir_dnstap)
 [![Documentation](https://img.shields.io/badge/docs-hexdocs-blue.svg)](https://hexdocs.pm/elixir_dnstap)
+[![codecov](https://codecov.io/gh/smkwlab/elixir_dnstap/branch/main/graph/badge.svg)](https://codecov.io/gh/smkwlab/elixir_dnstap)
 
 DNSTap logging library for Elixir - capture and export DNS query/response data using the DNSTap protocol and Frame Streams format.
 

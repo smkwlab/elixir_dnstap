@@ -163,8 +163,7 @@ defmodule ElixirDnstap.TcpWriter do
           :max_reconnect_interval,
           @default_max_reconnect_interval
         ),
-      max_reconnect_attempts:
-        Config.get_config_value(config, :max_reconnect_attempts, :infinity),
+      max_reconnect_attempts: Config.get_config_value(config, :max_reconnect_attempts, :infinity),
       current_interval: reconnect_interval
     }
 

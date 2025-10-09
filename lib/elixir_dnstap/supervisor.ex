@@ -42,8 +42,7 @@ defmodule ElixirDnstap.Supervisor do
           # GenStage pipeline components
           producer = %{
             id: ElixirDnstap.Producer,
-            start:
-              {ElixirDnstap.Producer, :start_link, [[name: ElixirDnstap.Producer]]}
+            start: {ElixirDnstap.Producer, :start_link, [[name: ElixirDnstap.Producer]]}
           }
 
           buffer_stage = %{

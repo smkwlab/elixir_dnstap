@@ -152,9 +152,11 @@ defmodule ElixirDnstap.ConfigTest do
       Application.put_env(:elixir_dnstap, :enabled, true)
       Application.put_env(:elixir_dnstap, :output, type: :tcp, port: 6000)
 
-      assert_raise RuntimeError, "DNSTap TCP configuration error: host is required for TCP output", fn ->
-        Config.select_writer()
-      end
+      assert_raise RuntimeError,
+                   "DNSTap TCP configuration error: host is required for TCP output",
+                   fn ->
+                     Config.select_writer()
+                   end
 
       # Cleanup
       Application.delete_env(:elixir_dnstap, :enabled)
@@ -165,9 +167,11 @@ defmodule ElixirDnstap.ConfigTest do
       Application.put_env(:elixir_dnstap, :enabled, true)
       Application.put_env(:elixir_dnstap, :output, type: :tcp, host: "127.0.0.1")
 
-      assert_raise RuntimeError, "DNSTap TCP configuration error: port is required for TCP output", fn ->
-        Config.select_writer()
-      end
+      assert_raise RuntimeError,
+                   "DNSTap TCP configuration error: port is required for TCP output",
+                   fn ->
+                     Config.select_writer()
+                   end
 
       # Cleanup
       Application.delete_env(:elixir_dnstap, :enabled)

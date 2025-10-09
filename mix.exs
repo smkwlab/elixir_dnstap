@@ -25,6 +25,13 @@ defmodule ElixirDnstap.MixProject do
         coveralls: :test,
         "coveralls.detail": :test,
         "coveralls.html": :test
+      ],
+
+      # Dialyzer
+      dialyzer: [
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
+        plt_add_apps: [:mix],
+        ignore_warnings: ".dialyzer_ignore.exs"
       ]
     ]
   end
@@ -74,7 +81,7 @@ defmodule ElixirDnstap.MixProject do
           ElixirDnstap.BufferStage,
           ElixirDnstap.WriterConsumer
         ],
-        "Writers": [
+        Writers: [
           ElixirDnstap.Writer.Behaviour,
           ElixirDnstap.Writer.File,
           ElixirDnstap.Writer.UnixSocket,
