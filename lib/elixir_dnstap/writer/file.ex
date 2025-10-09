@@ -36,7 +36,7 @@ defmodule ElixirDnstap.FileWriter do
 
   use GenServer
   require Logger
-  alias ElixirDnstap.{ConfigHelper, FrameStreams}
+  alias ElixirDnstap.{Config, FrameStreams}
 
   @content_type "protobuf:dnstap.Dnstap"
 
@@ -91,7 +91,7 @@ defmodule ElixirDnstap.FileWriter do
 
   @impl true
   def init(config) do
-    path = ConfigHelper.get_config_value(config, :path)
+    path = Config.get_config_value(config, :path)
 
     if path == nil do
       {:stop, {:error, :path_required}}

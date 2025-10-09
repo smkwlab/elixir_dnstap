@@ -1,4 +1,4 @@
-defmodule ElixirDnstap.WriterManager do
+defmodule ElixirDnstap.Supervisor do
   @moduledoc """
   Manager for DNSTap writer processes.
 
@@ -10,7 +10,6 @@ defmodule ElixirDnstap.WriterManager do
   require Logger
 
   alias ElixirDnstap.Config
-  alias ElixirDnstap.ConfigHelper
 
   def start_link(_opts) do
     Supervisor.start_link(__MODULE__, [], name: __MODULE__)
@@ -19,24 +18,24 @@ defmodule ElixirDnstap.WriterManager do
   @impl true
   def init(_opts) do
     children =
-      if ConfigParser.dnstap_enabled?() do
+      if Config.enabled?() do
         try do
-          {writer_module, writer_config} = ConfigHelper.select_writer()
+          {writer_module, writer_config} = Config.select_writer()
           Logger.info("DNSTap writer selected: #{inspect(writer_module)}")
 
           # Build GenStage pipeline: Producer -> BufferStage -> WriterConsumer -> Writer
           writer_children =
             case writer_module do
-              ElixirDnstap.TcpWriter ->
-                Logger.info("Starting TcpWriter under supervision")
+              ElixirDnstap.Writer.TCP ->
+                Logger.info("Starting TCP writer under supervision")
                 [%{id: writer_module, start: {writer_module, :start_link, [writer_config]}}]
 
-              ElixirDnstap.FileWriter ->
-                Logger.info("Starting FileWriter under supervision")
+              ElixirDnstap.Writer.File ->
+                Logger.info("Starting File writer under supervision")
                 [%{id: writer_module, start: {writer_module, :start_link, [writer_config]}}]
 
-              ElixirDnstap.UnixSocketWriter ->
-                Logger.info("Starting UnixSocketWriter under supervision")
+              ElixirDnstap.Writer.UnixSocket ->
+                Logger.info("Starting UnixSocket writer under supervision")
                 [%{id: writer_module, start: {writer_module, :start_link, [writer_config]}}]
             end
 

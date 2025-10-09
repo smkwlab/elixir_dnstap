@@ -94,7 +94,7 @@ defmodule ElixirDnstap.TcpWriter do
   @behaviour ElixirDnstap.WriterBehaviour
 
   require Logger
-  alias ElixirDnstap.{ConfigHelper, FrameStreams}
+  alias ElixirDnstap.{Config, FrameStreams}
 
   @content_type "protobuf:dnstap.Dnstap"
   @default_timeout 5000
@@ -145,26 +145,26 @@ defmodule ElixirDnstap.TcpWriter do
   @impl GenServer
   def init(config) do
     reconnect_interval =
-      ConfigHelper.get_config_value(config, :reconnect_interval, @default_reconnect_interval)
+      Config.get_config_value(config, :reconnect_interval, @default_reconnect_interval)
 
-    bidirectional = ConfigHelper.get_config_value(config, :bidirectional, true)
+    bidirectional = Config.get_config_value(config, :bidirectional, true)
     Logger.debug("[TcpWriter] Initializing with bidirectional mode: #{bidirectional}")
 
     state = %State{
-      host: ConfigHelper.get_config_value(config, :host),
-      port: ConfigHelper.get_config_value(config, :port),
-      timeout: ConfigHelper.get_config_value(config, :timeout, @default_timeout),
+      host: Config.get_config_value(config, :host),
+      port: Config.get_config_value(config, :port),
+      timeout: Config.get_config_value(config, :timeout, @default_timeout),
       bidirectional: bidirectional,
-      reconnect_enabled: ConfigHelper.get_config_value(config, :reconnect, true),
+      reconnect_enabled: Config.get_config_value(config, :reconnect, true),
       reconnect_interval: reconnect_interval,
       max_reconnect_interval:
-        ConfigHelper.get_config_value(
+        Config.get_config_value(
           config,
           :max_reconnect_interval,
           @default_max_reconnect_interval
         ),
       max_reconnect_attempts:
-        ConfigHelper.get_config_value(config, :max_reconnect_attempts, :infinity),
+        Config.get_config_value(config, :max_reconnect_attempts, :infinity),
       current_interval: reconnect_interval
     }
 
@@ -207,8 +207,8 @@ defmodule ElixirDnstap.TcpWriter do
   """
   @spec start_link(keyword() | map()) :: {:ok, pid()} | {:error, any()}
   def start_link(config) do
-    host = ConfigHelper.get_config_value(config, :host)
-    port = ConfigHelper.get_config_value(config, :port)
+    host = Config.get_config_value(config, :host)
+    port = Config.get_config_value(config, :port)
 
     cond do
       host == nil ->
@@ -226,8 +226,8 @@ defmodule ElixirDnstap.TcpWriter do
   @spec start(keyword() | map()) :: {:ok, pid()} | {:error, any()}
   def start(config) do
     # For standalone usage (not under supervisor), start without name registration
-    host = ConfigHelper.get_config_value(config, :host)
-    port = ConfigHelper.get_config_value(config, :port)
+    host = Config.get_config_value(config, :host)
+    port = Config.get_config_value(config, :port)
 
     cond do
       host == nil ->

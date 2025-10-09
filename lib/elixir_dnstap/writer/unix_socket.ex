@@ -63,7 +63,7 @@ defmodule ElixirDnstap.UnixSocketWriter do
   @behaviour ElixirDnstap.WriterBehaviour
 
   require Logger
-  alias ElixirDnstap.{ConfigHelper, FrameStreams}
+  alias ElixirDnstap.{Config, FrameStreams}
 
   @content_type "protobuf:dnstap.Dnstap"
   @default_timeout 5000
@@ -115,21 +115,21 @@ defmodule ElixirDnstap.UnixSocketWriter do
   @impl GenServer
   def init(config) do
     reconnect_interval =
-      ConfigHelper.get_config_value(config, :reconnect_interval, @default_reconnect_interval)
+      Config.get_config_value(config, :reconnect_interval, @default_reconnect_interval)
 
     state = %State{
-      path: ConfigHelper.get_config_value(config, :path),
-      timeout: ConfigHelper.get_config_value(config, :timeout, @default_timeout),
-      reconnect_enabled: ConfigHelper.get_config_value(config, :reconnect, true),
+      path: Config.get_config_value(config, :path),
+      timeout: Config.get_config_value(config, :timeout, @default_timeout),
+      reconnect_enabled: Config.get_config_value(config, :reconnect, true),
       reconnect_interval: reconnect_interval,
       max_reconnect_interval:
-        ConfigHelper.get_config_value(
+        Config.get_config_value(
           config,
           :max_reconnect_interval,
           @default_max_reconnect_interval
         ),
       max_reconnect_attempts:
-        ConfigHelper.get_config_value(config, :max_reconnect_attempts, :infinity),
+        Config.get_config_value(config, :max_reconnect_attempts, :infinity),
       current_interval: reconnect_interval
     }
 
@@ -174,7 +174,7 @@ defmodule ElixirDnstap.UnixSocketWriter do
   """
   @spec start_link(keyword() | map()) :: {:ok, pid()} | {:error, any()}
   def start_link(config) do
-    path = ConfigHelper.get_config_value(config, :path)
+    path = Config.get_config_value(config, :path)
 
     if path == nil do
       {:error, :path_required}
@@ -187,7 +187,7 @@ defmodule ElixirDnstap.UnixSocketWriter do
   @spec start(keyword() | map()) :: {:ok, pid()} | {:error, any()}
   def start(config) do
     # For standalone usage (not under supervisor), start without name registration
-    path = ConfigHelper.get_config_value(config, :path)
+    path = Config.get_config_value(config, :path)
 
     if path == nil do
       {:error, :path_required}
