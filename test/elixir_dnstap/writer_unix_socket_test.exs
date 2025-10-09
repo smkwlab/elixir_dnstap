@@ -10,11 +10,11 @@ defmodule ElixirDnstap.Writer.UnixSocketTest do
 
   setup do
     # Clean up test directory
-    File.rm_rf!(@test_dir)
+    File.rm_rf(@test_dir)
     File.mkdir_p!(@test_dir)
 
     on_exit(fn ->
-      File.rm_rf!(@test_dir)
+      File.rm_rf(@test_dir)
     end)
 
     :ok
