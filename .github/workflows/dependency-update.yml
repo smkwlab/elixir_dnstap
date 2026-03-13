@@ -1,0 +1,13 @@
+name: Dependency Update
+
+on:
+  schedule:
+    - cron: '0 1 * * 1'
+  workflow_dispatch:
+
+jobs:
+  dependency-update:
+    uses: smkwlab/.github/.github/workflows/dependency-update.yml@v1
+    with:
+      auto_merge: true
+    secrets: inherit
