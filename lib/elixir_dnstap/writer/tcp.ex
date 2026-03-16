@@ -334,7 +334,7 @@ defmodule ElixirDnstap.TcpWriter do
   end
 
   @impl GenServer
-  def handle_info(:connect, state) do
+  def handle_info(:connect, %State{} = state) do
     case do_connect(state) do
       {:ok, socket} ->
         Logger.info("DNSTap TcpWriter connected: #{state.host}:#{state.port}")
@@ -360,7 +360,7 @@ defmodule ElixirDnstap.TcpWriter do
     end
   end
 
-  def handle_info(:reconnect, state) do
+  def handle_info(:reconnect, %State{} = state) do
     # Clear the timer reference and attempt reconnection
     new_state = %State{state | reconnect_timer: nil}
     send(self(), :connect)
@@ -586,7 +586,7 @@ defmodule ElixirDnstap.TcpWriter do
     schedule_reconnect(new_state)
   end
 
-  defp handle_disconnect(state) do
+  defp handle_disconnect(%State{} = state) do
     new_state = %State{state | status: :disconnected}
     schedule_reconnect(new_state)
   end
@@ -610,7 +610,7 @@ defmodule ElixirDnstap.TcpWriter do
     %State{state | status: :disconnected}
   end
 
-  defp schedule_reconnect(state) do
+  defp schedule_reconnect(%State{} = state) do
     interval = state.current_interval
     timer_ref = Process.send_after(self(), :reconnect, interval)
 

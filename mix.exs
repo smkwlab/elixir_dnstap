@@ -21,17 +21,22 @@ defmodule ElixirDnstap.MixProject do
 
       # Test coverage
       test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.detail": :test,
-        "coveralls.html": :test
-      ],
 
       # Dialyzer
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
         plt_add_apps: [:mix],
         ignore_warnings: ".dialyzer_ignore.exs"
+      ]
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.html": :test
       ]
     ]
   end
