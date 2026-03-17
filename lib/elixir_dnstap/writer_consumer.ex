@@ -20,9 +20,9 @@ defmodule ElixirDnstap.WriterConsumer do
 
   ## Design Note
 
-  WriterConsumer performs direct file I/O instead of using Writer.File GenServer.
-  This is because BufferStage already encodes frames in Frame Streams format,
-  so no additional encoding is needed - just raw binary writes.
+  WriterConsumer delegates writes to the configured writer module via
+  `writer_module.write/1`. BufferStage encodes dnstap messages into Protocol
+  Buffers format, and the writer module handles the Frame Streams framing.
 
   ## Usage
 

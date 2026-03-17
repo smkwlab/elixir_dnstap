@@ -13,7 +13,7 @@ defmodule ElixirDnstap.Writer.File do
 
   ## GenServer Lifecycle
 
-  The Writer.File runs as a named GenServer under the WriterManager supervision tree:
+  The Writer.File runs as a named GenServer under the ElixirDnstap.Supervisor supervision tree:
 
   - **Initialization**: Opens file and writes START frame
   - **Runtime**: Handles write requests and appends DATA frames
@@ -22,10 +22,10 @@ defmodule ElixirDnstap.Writer.File do
   ## Usage
 
       # Start writer (supervised)
-      {:ok, pid} = Writer.File.start_link(path: "/var/log/tenbin_cache/dnstap.fstrm")
+      {:ok, pid} = ElixirDnstap.Writer.File.start_link(path: "/var/log/tenbin_cache/dnstap.fstrm")
 
       # Write messages (via named process)
-      :ok = Writer.File.write(encoded_dnstap_message)
+      :ok = ElixirDnstap.Writer.File.write(encoded_dnstap_message)
 
       # GenServer automatically handles STOP frame on termination
 

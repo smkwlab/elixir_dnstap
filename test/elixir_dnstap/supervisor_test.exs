@@ -25,7 +25,7 @@ defmodule ElixirDnstap.SupervisorTest do
       end
 
       File.rm_rf(@test_dir)
-      File.rm_rf("log")
+      File.rm_rf("log/dnstap.fstrm")
     end)
 
     :ok

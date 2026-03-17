@@ -35,31 +35,32 @@ defmodule ElixirDnstap.Writer.TCP do
   ### Direct Usage (for testing or custom integration)
 
       # Start writer and connect (starts GenServer)
-      {:ok, pid} = Writer.TCP.start(host: "localhost", port: 5555)
+      {:ok, pid} = ElixirDnstap.Writer.TCP.start(host: "localhost", port: 5555)
 
       # Write messages
-      :ok = Writer.TCP.write(pid, encoded_dnstap_message)
+      :ok = ElixirDnstap.Writer.TCP.write(pid, encoded_dnstap_message)
 
       # Close connection
-      :ok = Writer.TCP.close(pid)
+      :ok = ElixirDnstap.Writer.TCP.close(pid)
 
-  ### Production Usage (via WriterManager and YAML configuration)
+  ### Production Usage (via Application config)
 
-  In production, Writer.TCP is automatically started by `ElixirDnstap.WriterManager`
-  when DNSTap is configured with TCP output in `priv/tenbin_cache.yaml`:
+  In production, Writer.TCP is automatically started by `ElixirDnstap.Supervisor`
+  when DNSTap is configured with TCP output in Application config:
 
-      dnstap:
-        enabled: true
-        output:
-          type: tcp
-          host: "dnstap-collector.example.com"
-          port: 6000
-          bidirectional: false  # Use uni-directional mode for dnstap -l
-          reconnect: true
-          reconnect_interval: 1000
+      config :elixir_dnstap,
+        enabled: true,
+        output: [
+          type: :tcp,
+          host: "dnstap-collector.example.com",
+          port: 6000,
+          bidirectional: false,  # Use uni-directional mode for dnstap -l
+          reconnect: true,
+          reconnect_interval: 1000,
           max_reconnect_attempts: 10
+        ]
 
-  The WriterManager supervises the Writer.TCP process and handles lifecycle management.
+  ElixirDnstap.Supervisor supervises the Writer.TCP process and handles lifecycle management.
   DNS workers automatically send dnstap messages through the configured writer.
 
   ## Configuration
@@ -148,7 +149,7 @@ defmodule ElixirDnstap.Writer.TCP do
       Config.get_config_value(config, :reconnect_interval, @default_reconnect_interval)
 
     bidirectional = Config.get_config_value(config, :bidirectional, true)
-    Logger.debug("[TcpWriter] Initializing with bidirectional mode: #{bidirectional}")
+    Logger.debug("[Writer.TCP] Initializing with bidirectional mode: #{bidirectional}")
 
     state = %State{
       host: Config.get_config_value(config, :host),
@@ -201,7 +202,7 @@ defmodule ElixirDnstap.Writer.TCP do
       # Access the supervised Writer.TCP
       case Process.whereis(ElixirDnstap.Writer.TCP) do
         nil -> {:error, :not_found}
-        pid -> Writer.TCP.write(pid, message)
+        pid -> ElixirDnstap.Writer.TCP.write(pid, message)
       end
   """
   @spec start_link(keyword() | map()) :: {:ok, pid()} | {:error, any()}
@@ -303,18 +304,18 @@ defmodule ElixirDnstap.Writer.TCP do
   @impl GenServer
   def handle_call({:write, message}, _from, %State{status: :connected, socket: socket} = state) do
     Logger.debug(
-      "[TcpWriter] handle_call(:write) received #{byte_size(message)} bytes, status: connected, socket: #{inspect(socket)}"
+      "[Writer.TCP] handle_call(:write) received #{byte_size(message)} bytes, status: connected, socket: #{inspect(socket)}"
     )
 
     data_frame = FrameStreams.encode_data_frame(message)
 
     Logger.debug(
-      "[TcpWriter] Encoded to Frame Streams data frame: #{byte_size(data_frame)} bytes"
+      "[Writer.TCP] Encoded to Frame Streams data frame: #{byte_size(data_frame)} bytes"
     )
 
     case :gen_tcp.send(socket, data_frame) do
       :ok ->
-        Logger.debug("[TcpWriter] :gen_tcp.send successful")
+        Logger.debug("[Writer.TCP] :gen_tcp.send successful")
         {:reply, :ok, state}
 
       {:error, reason} ->
@@ -327,7 +328,7 @@ defmodule ElixirDnstap.Writer.TCP do
 
   def handle_call({:write, _message}, _from, %State{status: status} = state) do
     Logger.warning(
-      "[TcpWriter] handle_call(:write) called but status is #{status}, not connected"
+      "[Writer.TCP] handle_call(:write) called but status is #{status}, not connected"
     )
 
     {:reply, {:error, {:not_connected, status}}, state}
@@ -337,7 +338,7 @@ defmodule ElixirDnstap.Writer.TCP do
   def handle_info(:connect, %State{} = state) do
     case do_connect(state) do
       {:ok, socket} ->
-        Logger.info("DNSTap TcpWriter connected: #{state.host}:#{state.port}")
+        Logger.info("DNSTap Writer.TCP connected: #{state.host}:#{state.port}")
 
         new_state = %State{
           state
@@ -399,7 +400,7 @@ defmodule ElixirDnstap.Writer.TCP do
 
     # Close socket
     :gen_tcp.close(socket)
-    Logger.info("DNSTap TcpWriter closed: #{host}:#{port}")
+    Logger.info("DNSTap Writer.TCP closed: #{host}:#{port}")
 
     :ok
   end
@@ -439,17 +440,17 @@ defmodule ElixirDnstap.Writer.TCP do
 
   # Bi-directional Frame Streams handshake
   defp perform_handshake(socket, timeout, true = _bidirectional) do
-    Logger.debug("[TcpWriter] Starting bi-directional Frame Streams handshake")
+    Logger.debug("[Writer.TCP] Starting bi-directional Frame Streams handshake")
 
     with :ok <- send_ready(socket),
          :ok <- receive_accept(socket, timeout),
          :ok <- send_start(socket) do
-      Logger.info("[TcpWriter] Bi-directional Frame Streams handshake completed successfully")
+      Logger.info("[Writer.TCP] Bi-directional Frame Streams handshake completed successfully")
       :ok
     else
       {:error, reason} ->
         Logger.error(
-          "[TcpWriter] Bi-directional Frame Streams handshake failed: #{inspect(reason)}"
+          "[Writer.TCP] Bi-directional Frame Streams handshake failed: #{inspect(reason)}"
         )
 
         # Close socket on handshake failure to prevent resource leak
@@ -460,16 +461,16 @@ defmodule ElixirDnstap.Writer.TCP do
 
   # Uni-directional Frame Streams handshake (skip READY/ACCEPT)
   defp perform_handshake(socket, _timeout, false = _bidirectional) do
-    Logger.debug("[TcpWriter] Starting uni-directional Frame Streams handshake")
+    Logger.debug("[Writer.TCP] Starting uni-directional Frame Streams handshake")
 
     case send_start(socket) do
       :ok ->
-        Logger.info("[TcpWriter] Uni-directional Frame Streams handshake completed successfully")
+        Logger.info("[Writer.TCP] Uni-directional Frame Streams handshake completed successfully")
         :ok
 
       {:error, reason} ->
         Logger.error(
-          "[TcpWriter] Uni-directional Frame Streams handshake failed: #{inspect(reason)}"
+          "[Writer.TCP] Uni-directional Frame Streams handshake failed: #{inspect(reason)}"
         )
 
         # Close socket on handshake failure to prevent resource leak
@@ -480,51 +481,51 @@ defmodule ElixirDnstap.Writer.TCP do
 
   defp send_ready(socket) do
     ready_frame = FrameStreams.encode_control_frame(:ready, @content_type)
-    Logger.debug("[TcpWriter] Sending READY frame (#{byte_size(ready_frame)} bytes)")
+    Logger.debug("[Writer.TCP] Sending READY frame (#{byte_size(ready_frame)} bytes)")
 
     case :gen_tcp.send(socket, ready_frame) do
       :ok ->
-        Logger.debug("[TcpWriter] READY frame sent successfully")
+        Logger.debug("[Writer.TCP] READY frame sent successfully")
         :ok
 
       {:error, reason} ->
-        Logger.error("[TcpWriter] Failed to send READY frame: #{inspect(reason)}")
+        Logger.error("[Writer.TCP] Failed to send READY frame: #{inspect(reason)}")
         {:error, {:send_ready_failed, reason}}
     end
   end
 
   defp receive_accept(socket, timeout) do
-    Logger.debug("[TcpWriter] Waiting for ACCEPT frame (timeout: #{timeout}ms)")
+    Logger.debug("[Writer.TCP] Waiting for ACCEPT frame (timeout: #{timeout}ms)")
 
     case receive_control_frame(socket, timeout) do
       {:ok, {:control, :accept, @content_type}} ->
-        Logger.debug("[TcpWriter] ACCEPT frame received with correct content type")
+        Logger.debug("[Writer.TCP] ACCEPT frame received with correct content type")
         :ok
 
       {:ok, {:control, type, content_type}} ->
         Logger.error(
-          "[TcpWriter] Unexpected control frame: type=#{type}, content_type=#{content_type}"
+          "[Writer.TCP] Unexpected control frame: type=#{type}, content_type=#{content_type}"
         )
 
         {:error, {:unexpected_control_frame, type, content_type}}
 
       {:error, reason} ->
-        Logger.error("[TcpWriter] Failed to receive ACCEPT frame: #{inspect(reason)}")
+        Logger.error("[Writer.TCP] Failed to receive ACCEPT frame: #{inspect(reason)}")
         {:error, {:receive_accept_failed, reason}}
     end
   end
 
   defp send_start(socket) do
     start_frame = FrameStreams.encode_control_frame(:start, @content_type)
-    Logger.debug("[TcpWriter] Sending START frame (#{byte_size(start_frame)} bytes)")
+    Logger.debug("[Writer.TCP] Sending START frame (#{byte_size(start_frame)} bytes)")
 
     case :gen_tcp.send(socket, start_frame) do
       :ok ->
-        Logger.debug("[TcpWriter] START frame sent successfully")
+        Logger.debug("[Writer.TCP] START frame sent successfully")
         :ok
 
       {:error, reason} ->
-        Logger.error("[TcpWriter] Failed to send START frame: #{inspect(reason)}")
+        Logger.error("[Writer.TCP] Failed to send START frame: #{inspect(reason)}")
         {:error, {:send_start_failed, reason}}
     end
   end

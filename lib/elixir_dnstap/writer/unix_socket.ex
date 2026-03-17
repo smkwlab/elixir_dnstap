@@ -41,13 +41,13 @@ defmodule ElixirDnstap.Writer.UnixSocket do
   ## Usage
 
       # Start writer and connect (starts GenServer)
-      {:ok, pid} = Writer.UnixSocket.start(path: "/var/run/dnstap.sock")
+      {:ok, pid} = ElixirDnstap.Writer.UnixSocket.start(path: "/var/run/dnstap.sock")
 
       # Write messages
-      :ok = Writer.UnixSocket.write(pid, encoded_dnstap_message)
+      :ok = ElixirDnstap.Writer.UnixSocket.write(pid, encoded_dnstap_message)
 
       # Close connection
-      :ok = Writer.UnixSocket.close(pid)
+      :ok = ElixirDnstap.Writer.UnixSocket.close(pid)
 
   ## Configuration
 
@@ -168,7 +168,7 @@ defmodule ElixirDnstap.Writer.UnixSocket do
       # Access the supervised Writer.UnixSocket
       case Process.whereis(ElixirDnstap.Writer.UnixSocket) do
         nil -> {:error, :not_found}
-        pid -> Writer.UnixSocket.write(pid, message)
+        pid -> ElixirDnstap.Writer.UnixSocket.write(pid, message)
       end
   """
   @spec start_link(keyword() | map()) :: {:ok, pid()} | {:error, any()}
@@ -286,7 +286,7 @@ defmodule ElixirDnstap.Writer.UnixSocket do
   def handle_info(:connect, %State{} = state) do
     case do_connect(state) do
       {:ok, socket} ->
-        Logger.info("DNSTap UnixSocketWriter connected: #{state.path}")
+        Logger.info("DNSTap Writer.UnixSocket connected: #{state.path}")
 
         new_state = %State{
           state
@@ -361,7 +361,7 @@ defmodule ElixirDnstap.Writer.UnixSocket do
 
     # Close socket
     :gen_tcp.close(socket)
-    Logger.info("DNSTap UnixSocketWriter closed: #{path}")
+    Logger.info("DNSTap Writer.UnixSocket closed: #{path}")
 
     :ok
   end
