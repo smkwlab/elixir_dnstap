@@ -29,7 +29,7 @@ defmodule ElixirDnstap.WriterConsumer do
       # Start the writer consumer
       {:ok, consumer} = GenStage.start_link(
         WriterConsumer,
-        writer_module: ElixirDnstap.FileWriter
+        writer_module: ElixirDnstap.Writer.File
       )
 
       # Subscribe to a producer/consumer

@@ -1,4 +1,4 @@
-defmodule ElixirDnstap.FileWriter do
+defmodule ElixirDnstap.Writer.File do
   @moduledoc """
   Frame Streams file writer for dnstap (GenServer implementation).
 
