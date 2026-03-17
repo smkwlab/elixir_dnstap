@@ -9,24 +9,23 @@ defmodule ElixirDnstap.SupervisorTest do
     File.mkdir_p!(@test_dir)
 
     # Save original config to restore after test
-    original_enabled = Application.get_env(:elixir_dnstap, :enabled)
-    original_output = Application.get_env(:elixir_dnstap, :output)
+    original_enabled = Application.fetch_env(:elixir_dnstap, :enabled)
+    original_output = Application.fetch_env(:elixir_dnstap, :output)
 
     on_exit(fn ->
-      # Restore original config
-      if original_enabled do
-        Application.put_env(:elixir_dnstap, :enabled, original_enabled)
-      else
-        Application.delete_env(:elixir_dnstap, :enabled)
+      # Restore original config (distinguish false from unset)
+      case original_enabled do
+        {:ok, value} -> Application.put_env(:elixir_dnstap, :enabled, value)
+        :error -> Application.delete_env(:elixir_dnstap, :enabled)
       end
 
-      if original_output do
-        Application.put_env(:elixir_dnstap, :output, original_output)
-      else
-        Application.delete_env(:elixir_dnstap, :output)
+      case original_output do
+        {:ok, value} -> Application.put_env(:elixir_dnstap, :output, value)
+        :error -> Application.delete_env(:elixir_dnstap, :output)
       end
 
       File.rm_rf(@test_dir)
+      File.rm_rf("log")
     end)
 
     :ok
@@ -137,7 +136,7 @@ defmodule ElixirDnstap.SupervisorTest do
   end
 
   describe "Supervisor error handling" do
-    test "falls back to FileWriter for invalid output type" do
+    test "starts with no children for invalid output type" do
       Application.put_env(:elixir_dnstap, :enabled, true)
       Application.put_env(:elixir_dnstap, :output, type: :invalid_type)
 

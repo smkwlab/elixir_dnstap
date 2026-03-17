@@ -35,17 +35,17 @@ defmodule ElixirDnstap.Writer.TCP do
   ### Direct Usage (for testing or custom integration)
 
       # Start writer and connect (starts GenServer)
-      {:ok, pid} = TcpWriter.start(host: "localhost", port: 5555)
+      {:ok, pid} = Writer.TCP.start(host: "localhost", port: 5555)
 
       # Write messages
-      :ok = TcpWriter.write(pid, encoded_dnstap_message)
+      :ok = Writer.TCP.write(pid, encoded_dnstap_message)
 
       # Close connection
-      :ok = TcpWriter.close(pid)
+      :ok = Writer.TCP.close(pid)
 
   ### Production Usage (via WriterManager and YAML configuration)
 
-  In production, TcpWriter is automatically started by `ElixirDnstap.WriterManager`
+  In production, Writer.TCP is automatically started by `ElixirDnstap.WriterManager`
   when DNSTap is configured with TCP output in `priv/tenbin_cache.yaml`:
 
       dnstap:
@@ -59,7 +59,7 @@ defmodule ElixirDnstap.Writer.TCP do
           reconnect_interval: 1000
           max_reconnect_attempts: 10
 
-  The WriterManager supervises the TcpWriter process and handles lifecycle management.
+  The WriterManager supervises the Writer.TCP process and handles lifecycle management.
   DNS workers automatically send dnstap messages through the configured writer.
 
   ## Configuration
@@ -75,7 +75,7 @@ defmodule ElixirDnstap.Writer.TCP do
 
   ## Reconnection Behavior
 
-  When `reconnect: true`, the TcpWriter uses exponential backoff to automatically
+  When `reconnect: true`, the Writer.TCP uses exponential backoff to automatically
   reconnect on connection failures:
 
   1. Initial connection attempt fails
@@ -174,10 +174,10 @@ defmodule ElixirDnstap.Writer.TCP do
   end
 
   @doc """
-  Starts the TcpWriter GenServer as part of a supervision tree.
+  Starts the Writer.TCP GenServer as part of a supervision tree.
 
   This function is called by supervisors and registers the process with the module name (`__MODULE__`).
-  Other processes can access the registered TcpWriter process using `Process.whereis(__MODULE__)` or
+  Other processes can access the registered Writer.TCP process using `Process.whereis(__MODULE__)` or
   by calling `write/2` and `close/1` functions which internally use the registered name.
 
   ## Parameters
@@ -198,10 +198,10 @@ defmodule ElixirDnstap.Writer.TCP do
 
   ## Examples
 
-      # Access the supervised TcpWriter
+      # Access the supervised Writer.TCP
       case Process.whereis(ElixirDnstap.Writer.TCP) do
         nil -> {:error, :not_found}
-        pid -> TcpWriter.write(pid, message)
+        pid -> Writer.TCP.write(pid, message)
       end
   """
   @spec start_link(keyword() | map()) :: {:ok, pid()} | {:error, any()}
@@ -244,7 +244,7 @@ defmodule ElixirDnstap.Writer.TCP do
   Write a dnstap message to the TCP socket (named GenServer).
 
   The message is automatically wrapped in a Frame Streams data frame.
-  This function uses the registered process name to call the supervised TcpWriter.
+  This function uses the registered process name to call the supervised Writer.TCP.
 
   ## Parameters
 
@@ -267,7 +267,7 @@ defmodule ElixirDnstap.Writer.TCP do
 
   ## Parameters
 
-  - `pid` - TcpWriter GenServer PID
+  - `pid` - Writer.TCP GenServer PID
   - `message` - Encoded dnstap Protocol Buffer message
 
   ## Returns
@@ -288,7 +288,7 @@ defmodule ElixirDnstap.Writer.TCP do
 
   ## Parameters
 
-  - `pid` - TcpWriter GenServer PID
+  - `pid` - Writer.TCP GenServer PID
 
   ## Returns
 
