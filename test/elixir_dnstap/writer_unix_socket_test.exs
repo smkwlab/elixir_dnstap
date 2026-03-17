@@ -1,7 +1,8 @@
 defmodule ElixirDnstap.Writer.UnixSocketTest do
   use ExUnit.Case, async: true
 
-  alias ElixirDnstap.{Encoder, FrameStreams, UnixSocketWriter}
+  alias ElixirDnstap.{Encoder, FrameStreams}
+  alias ElixirDnstap.Writer.UnixSocket, as: UnixSocketWriter
 
   @test_dir "/tmp/tenbin_cache_test/dnstap_sockets"
   @content_type "protobuf:dnstap.Dnstap"

@@ -1,4 +1,4 @@
-defmodule ElixirDnstap.TcpWriter do
+defmodule ElixirDnstap.Writer.TCP do
   @moduledoc """
   Frame Streams TCP writer for dnstap with automatic reconnection.
 
@@ -199,7 +199,7 @@ defmodule ElixirDnstap.TcpWriter do
   ## Examples
 
       # Access the supervised TcpWriter
-      case Process.whereis(ElixirDnstap.TcpWriter) do
+      case Process.whereis(ElixirDnstap.Writer.TCP) do
         nil -> {:error, :not_found}
         pid -> TcpWriter.write(pid, message)
       end

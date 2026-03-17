@@ -1,4 +1,4 @@
-defmodule ElixirDnstap.UnixSocketWriter do
+defmodule ElixirDnstap.Writer.UnixSocket do
   @moduledoc """
   Frame Streams Unix socket writer for dnstap with automatic reconnection.
 
@@ -166,7 +166,7 @@ defmodule ElixirDnstap.UnixSocketWriter do
   ## Examples
 
       # Access the supervised UnixSocketWriter
-      case Process.whereis(ElixirDnstap.UnixSocketWriter) do
+      case Process.whereis(ElixirDnstap.Writer.UnixSocket) do
         nil -> {:error, :not_found}
         pid -> UnixSocketWriter.write(pid, message)
       end
