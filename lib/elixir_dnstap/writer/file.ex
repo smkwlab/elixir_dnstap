@@ -52,7 +52,7 @@ defmodule ElixirDnstap.Writer.File do
   @doc """
   Start the Writer.File GenServer.
 
-  This function is called by the WriterManager supervisor.
+  This function is called by ElixirDnstap.Supervisor.
 
   ## Parameters
 

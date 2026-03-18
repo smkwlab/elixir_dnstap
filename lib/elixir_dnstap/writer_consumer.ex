@@ -1,28 +1,23 @@
 defmodule ElixirDnstap.WriterConsumer do
   @moduledoc """
-  GenStage Consumer for writing DNSTap Frame Streams data to output.
+  GenStage Consumer that delegates DNSTap writes to a configured writer module.
 
-  This consumer receives encoded Frame Streams data frames from BufferStage
-  and writes them directly to a file.
+  This consumer receives Protocol Buffers encoded dnstap messages from
+  BufferStage and delegates writes to the configured writer module via
+  `writer_module.write/1`. The writer module handles Frame Streams framing.
 
   ## Pipeline Position
 
   ```
-  Producer -> BufferStage -> WriterConsumer
+  Producer -> BufferStage -> WriterConsumer -> Writer module (File/TCP/UnixSocket)
   ```
 
   ## Responsibilities
 
-  1. Receive encoded Frame Streams data frames from BufferStage
-  2. Write frames directly to file (raw binary I/O)
+  1. Receive Protocol Buffers encoded dnstap messages from BufferStage
+  2. Delegate writes to the configured writer module via `writer_module.write/1`
   3. Handle write errors gracefully with logging
-  4. Process frames in batches for efficiency
-
-  ## Design Note
-
-  WriterConsumer delegates writes to the configured writer module via
-  `writer_module.write/1`. BufferStage encodes dnstap messages into Protocol
-  Buffers format, and the writer module handles the Frame Streams framing.
+  4. Process events in batches for efficiency
 
   ## Usage
 

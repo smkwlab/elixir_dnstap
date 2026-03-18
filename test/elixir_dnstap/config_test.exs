@@ -1,5 +1,5 @@
 defmodule ElixirDnstap.ConfigTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias ElixirDnstap.Config
 
