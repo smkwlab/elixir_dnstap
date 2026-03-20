@@ -3,6 +3,26 @@ defmodule ElixirDnstap.ConfigTest do
 
   alias ElixirDnstap.Config
 
+  setup do
+    # Save original config to restore after test
+    original_enabled = Application.fetch_env(:elixir_dnstap, :enabled)
+    original_output = Application.fetch_env(:elixir_dnstap, :output)
+
+    on_exit(fn ->
+      case original_enabled do
+        {:ok, value} -> Application.put_env(:elixir_dnstap, :enabled, value)
+        :error -> Application.delete_env(:elixir_dnstap, :enabled)
+      end
+
+      case original_output do
+        {:ok, value} -> Application.put_env(:elixir_dnstap, :output, value)
+        :error -> Application.delete_env(:elixir_dnstap, :output)
+      end
+    end)
+
+    :ok
+  end
+
   describe "enabled?/0" do
     test "returns false by default" do
       Application.delete_env(:elixir_dnstap, :enabled)
@@ -12,9 +32,6 @@ defmodule ElixirDnstap.ConfigTest do
     test "returns true when enabled" do
       Application.put_env(:elixir_dnstap, :enabled, true)
       assert Config.enabled?()
-
-      # Cleanup
-      Application.delete_env(:elixir_dnstap, :enabled)
     end
   end
 
@@ -28,9 +45,6 @@ defmodule ElixirDnstap.ConfigTest do
       output_config = [type: :file, path: "/tmp/test.fstrm"]
       Application.put_env(:elixir_dnstap, :output, output_config)
       assert Config.get_output() == output_config
-
-      # Cleanup
-      Application.delete_env(:elixir_dnstap, :output)
     end
   end
 
@@ -43,9 +57,6 @@ defmodule ElixirDnstap.ConfigTest do
     test "returns configured type" do
       Application.put_env(:elixir_dnstap, :output, type: :tcp)
       assert Config.get_output_type() == :tcp
-
-      # Cleanup
-      Application.delete_env(:elixir_dnstap, :output)
     end
   end
 
@@ -90,10 +101,6 @@ defmodule ElixirDnstap.ConfigTest do
 
       assert writer_module == ElixirDnstap.Writer.File
       assert writer_config[:path] == "log/dnstap.fstrm"
-
-      # Cleanup
-      Application.delete_env(:elixir_dnstap, :enabled)
-      Application.delete_env(:elixir_dnstap, :output)
     end
 
     test "selects unix socket writer" do
@@ -104,10 +111,6 @@ defmodule ElixirDnstap.ConfigTest do
 
       assert writer_module == ElixirDnstap.Writer.UnixSocket
       assert writer_config[:path] == "/tmp/test.sock"
-
-      # Cleanup
-      Application.delete_env(:elixir_dnstap, :enabled)
-      Application.delete_env(:elixir_dnstap, :output)
     end
 
     test "selects TCP writer" do
@@ -127,10 +130,6 @@ defmodule ElixirDnstap.ConfigTest do
       assert writer_config[:timeout] == 5000
       assert writer_config[:bidirectional] == true
       assert writer_config[:reconnect] == true
-
-      # Cleanup
-      Application.delete_env(:elixir_dnstap, :enabled)
-      Application.delete_env(:elixir_dnstap, :output)
     end
 
     test "raises when unix socket path is missing" do
@@ -142,10 +141,6 @@ defmodule ElixirDnstap.ConfigTest do
                    fn ->
                      Config.select_writer()
                    end
-
-      # Cleanup
-      Application.delete_env(:elixir_dnstap, :enabled)
-      Application.delete_env(:elixir_dnstap, :output)
     end
 
     test "raises when TCP host is missing" do
@@ -157,10 +152,6 @@ defmodule ElixirDnstap.ConfigTest do
                    fn ->
                      Config.select_writer()
                    end
-
-      # Cleanup
-      Application.delete_env(:elixir_dnstap, :enabled)
-      Application.delete_env(:elixir_dnstap, :output)
     end
 
     test "raises when TCP port is missing" do
@@ -172,10 +163,6 @@ defmodule ElixirDnstap.ConfigTest do
                    fn ->
                      Config.select_writer()
                    end
-
-      # Cleanup
-      Application.delete_env(:elixir_dnstap, :enabled)
-      Application.delete_env(:elixir_dnstap, :output)
     end
 
     test "raises when TCP port is invalid" do
@@ -187,10 +174,6 @@ defmodule ElixirDnstap.ConfigTest do
                    fn ->
                      Config.select_writer()
                    end
-
-      # Cleanup
-      Application.delete_env(:elixir_dnstap, :enabled)
-      Application.delete_env(:elixir_dnstap, :output)
     end
   end
 end
