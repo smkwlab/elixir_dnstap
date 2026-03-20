@@ -42,8 +42,8 @@ defmodule ElixirDnstap.SupervisorTest do
     end
   end
 
-  describe "Supervisor with FileWriter (GenServer)" do
-    test "starts FileWriter child process under supervision" do
+  describe "Supervisor with Writer.File (GenServer)" do
+    test "starts Writer.File child process under supervision" do
       file_path = Path.join(@test_dir, "test.fstrm")
 
       Application.put_env(:elixir_dnstap, :enabled, true)
@@ -51,13 +51,13 @@ defmodule ElixirDnstap.SupervisorTest do
 
       {:ok, pid} = start_supervised(ElixirDnstap.Supervisor)
 
-      # FileWriter and GenStage pipeline should be supervised
+      # Writer.File and GenStage pipeline should be supervised
       assert Process.alive?(pid)
       children = Supervisor.which_children(pid)
       # Writer + Producer + BufferStage + WriterConsumer = 4 children
       assert length(children) == 4
 
-      # Verify FileWriter is among the children
+      # Verify Writer.File is among the children
       assert Enum.find(children, fn {mod, _pid, _type, _modules} ->
                mod == ElixirDnstap.Writer.File
              end)
@@ -77,8 +77,8 @@ defmodule ElixirDnstap.SupervisorTest do
     end
   end
 
-  describe "Supervisor with TcpWriter" do
-    test "starts TcpWriter child process under supervision" do
+  describe "Supervisor with Writer.TCP" do
+    test "starts Writer.TCP child process under supervision" do
       Application.put_env(:elixir_dnstap, :enabled, true)
 
       Application.put_env(:elixir_dnstap, :output,
@@ -91,12 +91,12 @@ defmodule ElixirDnstap.SupervisorTest do
 
       {:ok, pid} = start_supervised(ElixirDnstap.Supervisor)
 
-      # TcpWriter and GenStage pipeline should be supervised
+      # Writer.TCP and GenStage pipeline should be supervised
       assert Process.alive?(pid)
       children = Supervisor.which_children(pid)
       assert length(children) == 4
 
-      # Verify TcpWriter is among the children
+      # Verify Writer.TCP is among the children
       tcp_writer =
         Enum.find(children, fn {id, _pid, _type, _modules} ->
           id == ElixirDnstap.Writer.TCP
@@ -108,8 +108,8 @@ defmodule ElixirDnstap.SupervisorTest do
     end
   end
 
-  describe "Supervisor with UnixSocketWriter" do
-    test "starts UnixSocketWriter child process under supervision" do
+  describe "Supervisor with Writer.UnixSocket" do
+    test "starts Writer.UnixSocket child process under supervision" do
       socket_path = Path.join(@test_dir, "test.sock")
       {:ok, _server_pid} = start_mock_unix_server(socket_path)
 
@@ -118,12 +118,12 @@ defmodule ElixirDnstap.SupervisorTest do
 
       {:ok, pid} = start_supervised(ElixirDnstap.Supervisor)
 
-      # UnixSocketWriter and GenStage pipeline should be supervised
+      # Writer.UnixSocket and GenStage pipeline should be supervised
       assert Process.alive?(pid)
       children = Supervisor.which_children(pid)
       assert length(children) == 4
 
-      # Verify UnixSocketWriter is among the children
+      # Verify Writer.UnixSocket is among the children
       unix_writer =
         Enum.find(children, fn {id, _pid, _type, _modules} ->
           id == ElixirDnstap.Writer.UnixSocket
@@ -158,7 +158,7 @@ defmodule ElixirDnstap.SupervisorTest do
       children = Supervisor.which_children(pid)
       assert length(children) == 4
 
-      # Verify FileWriter is among the children
+      # Verify Writer.File is among the children
       file_writer =
         Enum.find(children, fn {id, _pid, _type, _modules} ->
           id == ElixirDnstap.Writer.File
