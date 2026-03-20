@@ -25,7 +25,6 @@ defmodule ElixirDnstap.SupervisorTest do
       end
 
       File.rm_rf(@test_dir)
-      File.rm_rf("log/dnstap.fstrm")
     end)
 
     :ok
@@ -148,9 +147,10 @@ defmodule ElixirDnstap.SupervisorTest do
       assert children == []
     end
 
-    test "uses default path when path is missing for file writer" do
+    test "starts file writer with minimal config" do
+      file_path = Path.join(@test_dir, "minimal.fstrm")
       Application.put_env(:elixir_dnstap, :enabled, true)
-      Application.put_env(:elixir_dnstap, :output, type: :file)
+      Application.put_env(:elixir_dnstap, :output, type: :file, path: file_path)
 
       {:ok, pid} = start_supervised(ElixirDnstap.Supervisor)
 

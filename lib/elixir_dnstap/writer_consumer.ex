@@ -6,6 +6,10 @@ defmodule ElixirDnstap.WriterConsumer do
   BufferStage and delegates writes to the configured writer module via
   `writer_module.write/1`. The writer module handles Frame Streams framing.
 
+  The writer module must be started as a named process (registered under
+  its module name via `name: __MODULE__`), since `write/1` dispatches
+  calls using the module name as the process identifier.
+
   ## Pipeline Position
 
   ```
