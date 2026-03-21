@@ -1,35 +1,37 @@
 defmodule ElixirDnstap.WriterConsumer do
   @moduledoc """
-  GenStage Consumer for writing DNSTap Frame Streams data to output.
+  GenStage Consumer that delegates DNSTap writes to a configured writer module.
 
-  This consumer receives encoded Frame Streams data frames from BufferStage
-  and writes them directly to a file.
+  This consumer receives Protocol Buffers encoded dnstap messages from
+  BufferStage and delegates writes to the configured writer module via
+  `writer_module.write/1`. The writer module handles Frame Streams framing.
+
+  The writer module must be started as a named process (registered under
+  its module name via `name: __MODULE__`), since `write/1` dispatches
+  calls using the module name as the process identifier.
 
   ## Pipeline Position
 
   ```
-  Producer -> BufferStage -> WriterConsumer
+  Producer -> BufferStage -> WriterConsumer -> Writer module (File/TCP/UnixSocket)
   ```
 
   ## Responsibilities
 
-  1. Receive encoded Frame Streams data frames from BufferStage
-  2. Write frames directly to file (raw binary I/O)
+  1. Receive Protocol Buffers encoded dnstap messages from BufferStage
+  2. Delegate writes to the configured writer module via `writer_module.write/1`
   3. Handle write errors gracefully with logging
-  4. Process frames in batches for efficiency
-
-  ## Design Note
-
-  WriterConsumer performs direct file I/O instead of using FileWriter GenServer.
-  This is because BufferStage already encodes frames in Frame Streams format,
-  so no additional encoding is needed - just raw binary writes.
+  4. Process events in batches for efficiency
 
   ## Usage
+
+      # Writer must be started first (typically under ElixirDnstap.Supervisor)
+      {:ok, _pid} = ElixirDnstap.Writer.File.start_link(path: "/tmp/dnstap.fstrm")
 
       # Start the writer consumer
       {:ok, consumer} = GenStage.start_link(
         WriterConsumer,
-        writer_module: ElixirDnstap.FileWriter
+        writer_module: ElixirDnstap.Writer.File
       )
 
       # Subscribe to a producer/consumer

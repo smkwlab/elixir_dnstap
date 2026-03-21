@@ -19,7 +19,7 @@ defmodule ElixirDnstap.BufferStage do
 
   ## Design Note
 
-  Frame Streams encoding is delegated to the Writer (e.g., FileWriter)
+  Frame Streams encoding is delegated to the Writer (e.g., `ElixirDnstap.Writer.File`)
   to reuse existing Writer infrastructure and avoid double encoding.
 
   ## Performance

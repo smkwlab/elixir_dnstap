@@ -1,7 +1,8 @@
 defmodule ElixirDnstap.Writer.TCPGenServerTest do
   use ExUnit.Case, async: true
 
-  alias ElixirDnstap.{Encoder, FrameStreams, TcpWriter}
+  alias ElixirDnstap.{Encoder, FrameStreams}
+  alias ElixirDnstap.Writer.TCP, as: TcpWriter
 
   @content_type "protobuf:dnstap.Dnstap"
 
