@@ -22,7 +22,7 @@ defmodule ElixirDnstap.Writer.File do
   ## Usage
 
       # Start writer (supervised)
-      {:ok, pid} = ElixirDnstap.Writer.File.start_link(path: "/var/log/tenbin_cache/dnstap.fstrm")
+      {:ok, _pid} = ElixirDnstap.Writer.File.start_link(path: "/var/log/tenbin_cache/dnstap.fstrm")
 
       # Write messages (via named process)
       :ok = ElixirDnstap.Writer.File.write(encoded_dnstap_message)

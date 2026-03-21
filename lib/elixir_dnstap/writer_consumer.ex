@@ -25,6 +25,9 @@ defmodule ElixirDnstap.WriterConsumer do
 
   ## Usage
 
+      # Writer must be started first (typically under ElixirDnstap.Supervisor)
+      {:ok, _pid} = ElixirDnstap.Writer.File.start_link(path: "/tmp/dnstap.fstrm")
+
       # Start the writer consumer
       {:ok, consumer} = GenStage.start_link(
         WriterConsumer,
