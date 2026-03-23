@@ -1,4 +1,4 @@
-defmodule ElixirDnstap.UnixSocketWriter do
+defmodule ElixirDnstap.Writer.UnixSocket do
   @moduledoc """
   Frame Streams Unix socket writer for dnstap with automatic reconnection.
 
@@ -41,13 +41,13 @@ defmodule ElixirDnstap.UnixSocketWriter do
   ## Usage
 
       # Start writer and connect (starts GenServer)
-      {:ok, pid} = UnixSocketWriter.start(path: "/var/run/dnstap.sock")
+      {:ok, pid} = ElixirDnstap.Writer.UnixSocket.start(path: "/var/run/dnstap.sock")
 
       # Write messages
-      :ok = UnixSocketWriter.write(pid, encoded_dnstap_message)
+      :ok = ElixirDnstap.Writer.UnixSocket.write(pid, encoded_dnstap_message)
 
       # Close connection
-      :ok = UnixSocketWriter.close(pid)
+      :ok = ElixirDnstap.Writer.UnixSocket.close(pid)
 
   ## Configuration
 
@@ -139,7 +139,7 @@ defmodule ElixirDnstap.UnixSocketWriter do
   end
 
   @doc """
-  Starts the UnixSocketWriter GenServer as part of a supervision tree.
+  Starts the Writer.UnixSocket GenServer as part of a supervision tree.
 
   This function is called by supervisors and registers the process with the module name (`__MODULE__`).
 
@@ -165,10 +165,10 @@ defmodule ElixirDnstap.UnixSocketWriter do
 
   ## Examples
 
-      # Access the supervised UnixSocketWriter
-      case Process.whereis(ElixirDnstap.UnixSocketWriter) do
+      # Access the supervised Writer.UnixSocket
+      case Process.whereis(ElixirDnstap.Writer.UnixSocket) do
         nil -> {:error, :not_found}
-        pid -> UnixSocketWriter.write(pid, message)
+        pid -> ElixirDnstap.Writer.UnixSocket.write(pid, message)
       end
   """
   @spec start_link(keyword() | map()) :: {:ok, pid()} | {:error, any()}
@@ -199,7 +199,7 @@ defmodule ElixirDnstap.UnixSocketWriter do
   Write a dnstap message to the Unix socket (named GenServer).
 
   The message is automatically wrapped in a Frame Streams data frame.
-  This function uses the registered process name to call the supervised UnixSocketWriter.
+  This function uses the registered process name to call the supervised Writer.UnixSocket.
 
   ## Parameters
 
@@ -222,7 +222,7 @@ defmodule ElixirDnstap.UnixSocketWriter do
 
   ## Parameters
 
-  - `pid` - UnixSocketWriter GenServer PID
+  - `pid` - Writer.UnixSocket GenServer PID
   - `message` - Encoded dnstap Protocol Buffer message
 
   ## Returns
@@ -243,7 +243,7 @@ defmodule ElixirDnstap.UnixSocketWriter do
 
   ## Parameters
 
-  - `pid` - UnixSocketWriter GenServer PID
+  - `pid` - Writer.UnixSocket GenServer PID
 
   ## Returns
 
@@ -286,7 +286,7 @@ defmodule ElixirDnstap.UnixSocketWriter do
   def handle_info(:connect, %State{} = state) do
     case do_connect(state) do
       {:ok, socket} ->
-        Logger.info("DNSTap UnixSocketWriter connected: #{state.path}")
+        Logger.info("DNSTap Writer.UnixSocket connected: #{state.path}")
 
         new_state = %State{
           state
@@ -361,7 +361,7 @@ defmodule ElixirDnstap.UnixSocketWriter do
 
     # Close socket
     :gen_tcp.close(socket)
-    Logger.info("DNSTap UnixSocketWriter closed: #{path}")
+    Logger.info("DNSTap Writer.UnixSocket closed: #{path}")
 
     :ok
   end

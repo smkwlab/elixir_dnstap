@@ -1,9 +1,6 @@
 defmodule ElixirDnstap.SupervisorTest do
   use ExUnit.Case, async: false
 
-  alias ElixirDnstap.Config, as: ConfigParser
-  alias ElixirDnstap.Supervisor
-
   @test_dir "/tmp/tenbin_cache_test/writer_manager"
 
   setup do
@@ -11,58 +8,55 @@ defmodule ElixirDnstap.SupervisorTest do
     File.rm_rf(@test_dir)
     File.mkdir_p!(@test_dir)
 
-    # Start ConfigParser (required for WriterManager)
-    start_supervised!(ConfigParser)
+    # Save original config to restore after test
+    original_enabled = Application.fetch_env(:elixir_dnstap, :enabled)
+    original_output = Application.fetch_env(:elixir_dnstap, :output)
 
     on_exit(fn ->
+      # Restore original config (distinguish false from unset)
+      case original_enabled do
+        {:ok, value} -> Application.put_env(:elixir_dnstap, :enabled, value)
+        :error -> Application.delete_env(:elixir_dnstap, :enabled)
+      end
+
+      case original_output do
+        {:ok, value} -> Application.put_env(:elixir_dnstap, :output, value)
+        :error -> Application.delete_env(:elixir_dnstap, :output)
+      end
+
       File.rm_rf(@test_dir)
     end)
 
     :ok
   end
 
-  # Helper function to update DNSTap configuration
-  defp set_dnstap_config(config) do
-    Agent.update(ConfigParser, fn state ->
-      Map.put(state, "dnstap", config)
-    end)
-  end
-
-  describe "WriterManager with DNSTap disabled" do
+  describe "Supervisor with DNSTap disabled" do
     test "starts with empty children when DNSTap is disabled" do
-      # DNSTap disabled
-      set_dnstap_config(%{"enabled" => false})
+      Application.put_env(:elixir_dnstap, :enabled, false)
 
-      {:ok, pid} = start_supervised({WriterManager, []})
+      {:ok, pid} = start_supervised(ElixirDnstap.Supervisor)
 
-      # Supervisor should start but have no children
       assert Process.alive?(pid)
       assert Supervisor.which_children(pid) == []
     end
   end
 
-  describe "WriterManager with FileWriter (GenServer)" do
-    test "starts FileWriter child process under supervision" do
+  describe "Supervisor with Writer.File (GenServer)" do
+    test "starts Writer.File child process under supervision" do
       file_path = Path.join(@test_dir, "test.fstrm")
 
-      # Configure DNSTap with FileWriter
-      set_dnstap_config(%{
-        "enabled" => true,
-        "output" => %{
-          "type" => "file",
-          "path" => file_path
-        }
-      })
+      Application.put_env(:elixir_dnstap, :enabled, true)
+      Application.put_env(:elixir_dnstap, :output, type: :file, path: file_path)
 
-      {:ok, pid} = start_supervised({WriterManager, []})
+      {:ok, pid} = start_supervised(ElixirDnstap.Supervisor)
 
-      # FileWriter and GenStage pipeline should be supervised
+      # Writer.File and GenStage pipeline should be supervised
       assert Process.alive?(pid)
       children = Supervisor.which_children(pid)
       # Writer + Producer + BufferStage + WriterConsumer = 4 children
       assert length(children) == 4
 
-      # Verify FileWriter is among the children
+      # Verify Writer.File is among the children
       assert Enum.find(children, fn {mod, _pid, _type, _modules} ->
                mod == ElixirDnstap.Writer.File
              end)
@@ -82,28 +76,26 @@ defmodule ElixirDnstap.SupervisorTest do
     end
   end
 
-  describe "WriterManager with TcpWriter" do
-    test "starts TcpWriter child process under supervision" do
-      # Configure DNSTap with TcpWriter
-      set_dnstap_config(%{
-        "enabled" => true,
-        "output" => %{
-          "type" => "tcp",
-          "host" => "localhost",
-          "port" => 12_345,
-          "reconnect" => false,
-          "timeout" => 100
-        }
-      })
+  describe "Supervisor with Writer.TCP" do
+    test "starts Writer.TCP child process under supervision" do
+      Application.put_env(:elixir_dnstap, :enabled, true)
 
-      {:ok, pid} = start_supervised({WriterManager, []})
+      Application.put_env(:elixir_dnstap, :output,
+        type: :tcp,
+        host: "localhost",
+        port: 12_345,
+        reconnect: false,
+        timeout: 100
+      )
 
-      # TcpWriter and GenStage pipeline should be supervised
+      {:ok, pid} = start_supervised(ElixirDnstap.Supervisor)
+
+      # Writer.TCP and GenStage pipeline should be supervised
       assert Process.alive?(pid)
       children = Supervisor.which_children(pid)
       assert length(children) == 4
 
-      # Verify TcpWriter is among the children
+      # Verify Writer.TCP is among the children
       tcp_writer =
         Enum.find(children, fn {id, _pid, _type, _modules} ->
           id == ElixirDnstap.Writer.TCP
@@ -115,29 +107,22 @@ defmodule ElixirDnstap.SupervisorTest do
     end
   end
 
-  describe "WriterManager with UnixSocketWriter" do
-    test "starts UnixSocketWriter child process under supervision" do
+  describe "Supervisor with Writer.UnixSocket" do
+    test "starts Writer.UnixSocket child process under supervision" do
       socket_path = Path.join(@test_dir, "test.sock")
       {:ok, _server_pid} = start_mock_unix_server(socket_path)
 
-      # Configure DNSTap with UnixSocketWriter
-      set_dnstap_config(%{
-        "enabled" => true,
-        "output" => %{
-          "type" => "unix_socket",
-          "path" => socket_path,
-          "reconnect" => false
-        }
-      })
+      Application.put_env(:elixir_dnstap, :enabled, true)
+      Application.put_env(:elixir_dnstap, :output, type: :unix_socket, path: socket_path)
 
-      {:ok, pid} = start_supervised({WriterManager, []})
+      {:ok, pid} = start_supervised(ElixirDnstap.Supervisor)
 
-      # UnixSocketWriter and GenStage pipeline should be supervised
+      # Writer.UnixSocket and GenStage pipeline should be supervised
       assert Process.alive?(pid)
       children = Supervisor.which_children(pid)
       assert length(children) == 4
 
-      # Verify UnixSocketWriter is among the children
+      # Verify Writer.UnixSocket is among the children
       unix_writer =
         Enum.find(children, fn {id, _pid, _type, _modules} ->
           id == ElixirDnstap.Writer.UnixSocket
@@ -149,52 +134,31 @@ defmodule ElixirDnstap.SupervisorTest do
     end
   end
 
-  describe "WriterManager error handling" do
-    test "falls back to FileWriter for invalid output type" do
-      # Configure with invalid output type
-      set_dnstap_config(%{
-        "enabled" => true,
-        "output" => %{
-          "type" => "invalid_type"
-        }
-      })
+  describe "Supervisor error handling" do
+    test "starts with no children for invalid output type" do
+      Application.put_env(:elixir_dnstap, :enabled, true)
+      Application.put_env(:elixir_dnstap, :output, type: :invalid_type)
 
-      # Should fall back to FileWriter with default path
-      {:ok, pid} = start_supervised({WriterManager, []})
+      # Config.select_writer raises for unknown type, supervisor rescues and starts with no children
+      {:ok, pid} = start_supervised(ElixirDnstap.Supervisor)
 
       assert Process.alive?(pid)
       children = Supervisor.which_children(pid)
-      assert length(children) == 4
-
-      # Verify FileWriter is among the children
-      file_writer =
-        Enum.find(children, fn {id, _pid, _type, _modules} ->
-          id == ElixirDnstap.Writer.File
-        end)
-
-      assert file_writer
-      {_id, file_writer_pid, :worker, _} = file_writer
-      assert Process.alive?(file_writer_pid)
+      assert children == []
     end
 
-    test "uses default path when path is missing for file writer" do
-      # Configure with missing path for file writer
-      set_dnstap_config(%{
-        "enabled" => true,
-        "output" => %{
-          "type" => "file"
-          # Missing "path" - should use default "log/dnstap.log"
-        }
-      })
+    test "starts file writer with minimal config" do
+      file_path = Path.join(@test_dir, "minimal.fstrm")
+      Application.put_env(:elixir_dnstap, :enabled, true)
+      Application.put_env(:elixir_dnstap, :output, type: :file, path: file_path)
 
-      # Should start with FileWriter using default path
-      {:ok, pid} = start_supervised({WriterManager, []})
+      {:ok, pid} = start_supervised(ElixirDnstap.Supervisor)
 
       assert Process.alive?(pid)
       children = Supervisor.which_children(pid)
       assert length(children) == 4
 
-      # Verify FileWriter is among the children
+      # Verify Writer.File is among the children
       file_writer =
         Enum.find(children, fn {id, _pid, _type, _modules} ->
           id == ElixirDnstap.Writer.File

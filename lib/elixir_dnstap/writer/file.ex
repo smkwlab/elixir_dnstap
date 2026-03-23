@@ -1,4 +1,4 @@
-defmodule ElixirDnstap.FileWriter do
+defmodule ElixirDnstap.Writer.File do
   @moduledoc """
   Frame Streams file writer for dnstap (GenServer implementation).
 
@@ -13,7 +13,7 @@ defmodule ElixirDnstap.FileWriter do
 
   ## GenServer Lifecycle
 
-  The FileWriter runs as a named GenServer under the WriterManager supervision tree:
+  The Writer.File runs as a named GenServer under the ElixirDnstap.Supervisor supervision tree:
 
   - **Initialization**: Opens file and writes START frame
   - **Runtime**: Handles write requests and appends DATA frames
@@ -22,10 +22,10 @@ defmodule ElixirDnstap.FileWriter do
   ## Usage
 
       # Start writer (supervised)
-      {:ok, pid} = FileWriter.start_link(path: "/var/log/tenbin_cache/dnstap.fstrm")
+      {:ok, _pid} = ElixirDnstap.Writer.File.start_link(path: "/var/log/tenbin_cache/dnstap.fstrm")
 
       # Write messages (via named process)
-      :ok = FileWriter.write(encoded_dnstap_message)
+      :ok = ElixirDnstap.Writer.File.write(encoded_dnstap_message)
 
       # GenServer automatically handles STOP frame on termination
 
@@ -50,9 +50,9 @@ defmodule ElixirDnstap.FileWriter do
   ## GenServer API
 
   @doc """
-  Start the FileWriter GenServer.
+  Start the Writer.File GenServer.
 
-  This function is called by the WriterManager supervisor.
+  This function is called by ElixirDnstap.Supervisor.
 
   ## Parameters
 
@@ -114,7 +114,7 @@ defmodule ElixirDnstap.FileWriter do
   rescue
     e ->
       error_msg = Exception.message(e)
-      Logger.warning("FileWriter write failed: #{error_msg}")
+      Logger.warning("Writer.File write failed: #{error_msg}")
       {:reply, {:error, error_msg}, state}
   end
 
@@ -125,10 +125,10 @@ defmodule ElixirDnstap.FileWriter do
       stop_frame = FrameStreams.encode_control_frame(:stop, nil)
       IO.binwrite(file, stop_frame)
       File.close(file)
-      Logger.info("DNSTap FileWriter closed: #{path}")
+      Logger.info("DNSTap Writer.File closed: #{path}")
     rescue
       e ->
-        Logger.warning("Error closing FileWriter #{path}: #{inspect(e)}")
+        Logger.warning("Error closing Writer.File #{path}: #{inspect(e)}")
     end
 
     :ok
@@ -160,7 +160,7 @@ defmodule ElixirDnstap.FileWriter do
           path: path
         }
 
-        Logger.info("DNSTap FileWriter initialized: #{path}")
+        Logger.info("DNSTap Writer.File initialized: #{path}")
         {:ok, state}
 
       {:error, reason} ->
