@@ -7,6 +7,39 @@
 
 DNSTap logging library for Elixir - capture and export DNS query/response data using the DNSTap protocol and Frame Streams format.
 
+## Quick Start
+
+```elixir
+# 1. Add the dependency in mix.exs
+def deps do
+  [{:elixir_dnstap, "~> 0.1.0"}]
+end
+```
+
+```elixir
+# 2. In config/config.exs, pick an output (minimal example: file output)
+config :elixir_dnstap,
+  enabled: true,
+  output: [type: :file, path: "log/dnstap.fstrm"]
+```
+
+```elixir
+# 3. ElixirDnstap.Application checks `enabled?` at boot and starts the
+#    supervisor automatically, so the host only has to call
+#    log_client_query/6 when a DNS packet arrives.
+:ok =
+  ElixirDnstap.log_client_query(
+    query_packet,
+    {192, 168, 1, 100},  # client_addr
+    54_321,              # client_port
+    {127, 0, 0, 1},      # server_addr
+    5353,                # server_port
+    :udp
+  )
+```
+
+The resulting `log/dnstap.fstrm` can be read with the [`dnstap`](https://github.com/dnstap/golang-dnstap) command-line tool or [dnscollector](https://github.com/dmachard/go-dnscollector). See [Reading DNSTap Files](#reading-dnstap-files) below for details.
+
 ## Features
 
 - 📦 **Frame Streams Protocol** - Full implementation of uni-directional and bi-directional Frame Streams
@@ -76,49 +109,42 @@ config :elixir_dnstap,
 
 ### Starting the DNSTap Pipeline
 
-Add `ElixirDnstap.Supervisor` to your application's supervision tree:
+`elixir_dnstap` is itself an OTP application (`mod: {ElixirDnstap.Application, []}` in `mix.exs`). When the host application starts, `ElixirDnstap.Application.start/2` runs automatically as part of dependency resolution and starts `ElixirDnstap.Supervisor` whenever `:elixir_dnstap, :enabled` is `true`. **No supervision-tree wiring on the host side is required** — adding the dep and setting `enabled: true` is enough.
 
-```elixir
-defmodule MyApp.Application do
-  use Application
-
-  def start(_type, _args) do
-    children = [
-      # ... other children
-      ElixirDnstap.Supervisor
-    ]
-
-    opts = [strategy: :one_for_one, name: MyApp.Supervisor]
-    Supervisor.start_link(children, opts)
-  end
-end
-```
+The setting is consulted in two places: `ElixirDnstap.Application.start/2` decides whether to start `ElixirDnstap.Supervisor` at all, and `ElixirDnstap.Supervisor.init/1` decides whether to bring up the GenStage pipeline. Starting `ElixirDnstap.Supervisor` manually while `enabled` is still `false` therefore produces an empty supervision tree, and subsequent `log_client_query/6` calls return `{:error, :producer_not_available}`. To enable logging at runtime, set `enabled: true` (via `Application.put_env/3` or your release config) before the supervisor starts.
 
 ### Logging DNS Messages
 
+`log_client_query/6` takes positional arguments; `log_client_response/1` takes a keyword list that includes the original query packet plus the query timestamp captured at receive time.
+
 ```elixir
 # Log a DNS client query
-ElixirDnstap.log_client_query(
-  query_packet,
-  socket_family: :inet,
-  socket_protocol: :udp,
-  query_address: {127, 0, 0, 1},
-  query_port: 12345,
-  response_address: {8, 8, 8, 8},
-  response_port: 53
-)
+:ok =
+  ElixirDnstap.log_client_query(
+    query_packet,
+    {127, 0, 0, 1},  # client_addr
+    12_345,          # client_port
+    {8, 8, 8, 8},    # server_addr
+    53,              # server_port
+    :udp             # :udp | :tcp
+  )
 
 # Log a DNS client response
-ElixirDnstap.log_client_response(
-  response_packet,
-  socket_family: :inet,
-  socket_protocol: :udp,
-  query_address: {127, 0, 0, 1},
-  query_port: 12345,
-  response_address: {8, 8, 8, 8},
-  response_port: 53
-)
+:ok =
+  ElixirDnstap.log_client_response(
+    query_packet: query_packet,
+    response_packet: response_packet,
+    client_addr: {127, 0, 0, 1},
+    client_port: 12_345,
+    server_addr: {8, 8, 8, 8},
+    server_port: 53,
+    socket_protocol: :udp,
+    query_time_sec: query_time_sec,
+    query_time_nsec: query_time_nsec
+  )
 ```
+
+Both functions return `{:error, :producer_not_available}` if the supervision tree has not been started.
 
 ## Architecture
 
