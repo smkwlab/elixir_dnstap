@@ -10,23 +10,23 @@ DNSTap logging library for Elixir - capture and export DNS query/response data u
 ## Quick Start
 
 ```elixir
-# 1. mix.exs に依存追加
+# 1. Add the dependency in mix.exs
 def deps do
   [{:elixir_dnstap, "~> 0.1.0"}]
 end
 ```
 
 ```elixir
-# 2. config/config.exs で出力先（最小例: ファイル出力）を設定
+# 2. In config/config.exs, pick an output (minimal example: file output)
 config :elixir_dnstap,
   enabled: true,
   output: [type: :file, path: "log/dnstap.fstrm"]
 ```
 
 ```elixir
-# 3. アプリ起動時、ElixirDnstap.Application が enabled? を見て
-#    Supervisor を自動起動するので、ホスト側は DNS パケット受信時に
-#    log_client_query/6 を呼ぶだけ
+# 3. ElixirDnstap.Application checks `enabled?` at boot and starts the
+#    supervisor automatically, so the host only has to call
+#    log_client_query/6 when a DNS packet arrives.
 :ok =
   ElixirDnstap.log_client_query(
     query_packet,
@@ -38,7 +38,7 @@ config :elixir_dnstap,
   )
 ```
 
-書き出された `log/dnstap.fstrm` は [`dnstap`](https://github.com/dnstap/golang-dnstap) コマンドや [dnscollector](https://github.com/dmachard/go-dnscollector) で読み出し可能。詳細は下記 [Reading DNSTap Files](#reading-dnstap-files) を参照。
+The resulting `log/dnstap.fstrm` can be read with the [`dnstap`](https://github.com/dnstap/golang-dnstap) command-line tool or [dnscollector](https://github.com/dmachard/go-dnscollector). See [Reading DNSTap Files](#reading-dnstap-files) below for details.
 
 ## Features
 
@@ -109,9 +109,9 @@ config :elixir_dnstap,
 
 ### Starting the DNSTap Pipeline
 
-`elixir_dnstap` is itself an OTP application (`mod: {ElixirDnstap.Application, []}` in `mix.exs`). When the host application starts, `ElixirDnstap.Application.start/2` runs automatically as part of dependency resolution and starts `ElixirDnstap.Supervisor` whenever `:elixir_dnstap, :enabled` is `true`. **No supervision-tree wiring on the host side is required for the normal case** — adding the dep and setting `enabled: true` is enough.
+`elixir_dnstap` is itself an OTP application (`mod: {ElixirDnstap.Application, []}` in `mix.exs`). When the host application starts, `ElixirDnstap.Application.start/2` runs automatically as part of dependency resolution and starts `ElixirDnstap.Supervisor` whenever `:elixir_dnstap, :enabled` is `true`. **No supervision-tree wiring on the host side is required** — adding the dep and setting `enabled: true` is enough.
 
-If you do need to start the pipeline yourself (for example, you set `enabled: false` to keep it off by default and want to enable it dynamically), call `Supervisor.start_link/2` with `ElixirDnstap.Supervisor` exactly once. Adding it to a host supervision tree on top of the auto-start would fail with `{:already_started, pid}`.
+The setting is consulted in two places: `ElixirDnstap.Application.start/2` decides whether to start `ElixirDnstap.Supervisor` at all, and `ElixirDnstap.Supervisor.init/1` decides whether to bring up the GenStage pipeline. Starting `ElixirDnstap.Supervisor` manually while `enabled` is still `false` therefore produces an empty supervision tree, and subsequent `log_client_query/6` calls return `{:error, :producer_not_available}`. To enable logging at runtime, set `enabled: true` (via `Application.put_env/3` or your release config) before the supervisor starts.
 
 ### Logging DNS Messages
 
