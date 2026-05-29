@@ -24,17 +24,9 @@ config :elixir_dnstap,
 ```
 
 ```elixir
-# 3. Application の supervision tree に Supervisor を組み込み、
-#    DNSWorker などから DNS パケットを送る
-defmodule MyApp.Application do
-  use Application
-
-  def start(_type, _args) do
-    Supervisor.start_link([ElixirDnstap.Supervisor], strategy: :one_for_one, name: MyApp.Supervisor)
-  end
-end
-
-# Client query を log
+# 3. アプリ起動時、ElixirDnstap.Application が enabled? を見て
+#    Supervisor を自動起動するので、ホスト側は DNS パケット受信時に
+#    log_client_query/6 を呼ぶだけ
 :ok =
   ElixirDnstap.log_client_query(
     query_packet,
@@ -117,23 +109,9 @@ config :elixir_dnstap,
 
 ### Starting the DNSTap Pipeline
 
-Add `ElixirDnstap.Supervisor` to your application's supervision tree:
+`elixir_dnstap` is itself an OTP application (`mod: {ElixirDnstap.Application, []}` in `mix.exs`). When the host application starts, `ElixirDnstap.Application.start/2` runs automatically as part of dependency resolution and starts `ElixirDnstap.Supervisor` whenever `:elixir_dnstap, :enabled` is `true`. **No supervision-tree wiring on the host side is required for the normal case** — adding the dep and setting `enabled: true` is enough.
 
-```elixir
-defmodule MyApp.Application do
-  use Application
-
-  def start(_type, _args) do
-    children = [
-      # ... other children
-      ElixirDnstap.Supervisor
-    ]
-
-    opts = [strategy: :one_for_one, name: MyApp.Supervisor]
-    Supervisor.start_link(children, opts)
-  end
-end
-```
+If you do need to start the pipeline yourself (for example, you set `enabled: false` to keep it off by default and want to enable it dynamically), call `Supervisor.start_link/2` with `ElixirDnstap.Supervisor` exactly once. Adding it to a host supervision tree on top of the auto-start would fail with `{:already_started, pid}`.
 
 ### Logging DNS Messages
 
