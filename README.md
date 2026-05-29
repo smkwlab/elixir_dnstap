@@ -7,6 +7,47 @@
 
 DNSTap logging library for Elixir - capture and export DNS query/response data using the DNSTap protocol and Frame Streams format.
 
+## Quick Start
+
+```elixir
+# 1. mix.exs に依存追加
+def deps do
+  [{:elixir_dnstap, "~> 0.1.0"}]
+end
+```
+
+```elixir
+# 2. config/config.exs で出力先（最小例: ファイル出力）を設定
+config :elixir_dnstap,
+  enabled: true,
+  output: [type: :file, path: "log/dnstap.fstrm"]
+```
+
+```elixir
+# 3. Application の supervision tree に Supervisor を組み込み、
+#    DNSWorker などから DNS パケットを送る
+defmodule MyApp.Application do
+  use Application
+
+  def start(_type, _args) do
+    Supervisor.start_link([ElixirDnstap.Supervisor], strategy: :one_for_one, name: MyApp.Supervisor)
+  end
+end
+
+# Client query を log
+:ok =
+  ElixirDnstap.log_client_query(
+    query_packet,
+    {192, 168, 1, 100},  # client_addr
+    54_321,              # client_port
+    {127, 0, 0, 1},      # server_addr
+    5353,                # server_port
+    :udp
+  )
+```
+
+書き出された `log/dnstap.fstrm` は [`dnstap`](https://github.com/dnstap/golang-dnstap) コマンドや [dnscollector](https://github.com/dmachard/go-dnscollector) で読み出し可能。詳細は下記 [Reading DNSTap Files](#reading-dnstap-files) を参照。
+
 ## Features
 
 - 📦 **Frame Streams Protocol** - Full implementation of uni-directional and bi-directional Frame Streams
@@ -96,29 +137,36 @@ end
 
 ### Logging DNS Messages
 
+`log_client_query/6` takes positional arguments; `log_client_response/1` takes a keyword list that includes the original query packet plus the query timestamp captured at receive time.
+
 ```elixir
 # Log a DNS client query
-ElixirDnstap.log_client_query(
-  query_packet,
-  socket_family: :inet,
-  socket_protocol: :udp,
-  query_address: {127, 0, 0, 1},
-  query_port: 12345,
-  response_address: {8, 8, 8, 8},
-  response_port: 53
-)
+:ok =
+  ElixirDnstap.log_client_query(
+    query_packet,
+    {127, 0, 0, 1},  # client_addr
+    12_345,          # client_port
+    {8, 8, 8, 8},    # server_addr
+    53,              # server_port
+    :udp             # :udp | :tcp
+  )
 
 # Log a DNS client response
-ElixirDnstap.log_client_response(
-  response_packet,
-  socket_family: :inet,
-  socket_protocol: :udp,
-  query_address: {127, 0, 0, 1},
-  query_port: 12345,
-  response_address: {8, 8, 8, 8},
-  response_port: 53
-)
+:ok =
+  ElixirDnstap.log_client_response(
+    query_packet: query_packet,
+    response_packet: response_packet,
+    client_addr: {127, 0, 0, 1},
+    client_port: 12_345,
+    server_addr: {8, 8, 8, 8},
+    server_port: 53,
+    socket_protocol: :udp,
+    query_time_sec: query_time_sec,
+    query_time_nsec: query_time_nsec
+  )
 ```
+
+Both functions return `{:error, :producer_not_available}` if the supervision tree has not been started.
 
 ## Architecture
 
