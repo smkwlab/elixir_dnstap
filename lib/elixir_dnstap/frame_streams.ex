@@ -152,7 +152,7 @@ defmodule ElixirDnstap.FrameStreams do
 
   def decode_frame(<<length::32-big, rest::binary>>) when byte_size(rest) >= length do
     # Data frame
-    <<payload::binary-size(length), remaining::binary>> = rest
+    <<payload::binary-size(^length), remaining::binary>> = rest
     {:ok, {:data, payload}, remaining}
   end
 
@@ -193,7 +193,7 @@ defmodule ElixirDnstap.FrameStreams do
 
   defp decode_control_frame(<<control_length::32-big, rest::binary>>)
        when byte_size(rest) >= control_length do
-    <<control_payload::binary-size(control_length), remaining::binary>> = rest
+    <<control_payload::binary-size(^control_length), remaining::binary>> = rest
 
     case decode_control_payload(control_payload) do
       {:ok, type, content_type} ->
@@ -226,7 +226,7 @@ defmodule ElixirDnstap.FrameStreams do
          <<@fstrm_control_field_content_type::32-big, length::32-big, rest::binary>>
        )
        when byte_size(rest) >= length do
-    <<content_type::binary-size(length), _::binary>> = rest
+    <<content_type::binary-size(^length), _::binary>> = rest
     content_type
   end
 
