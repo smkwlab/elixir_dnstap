@@ -150,18 +150,34 @@ Both functions return `{:error, :producer_not_available}` if the supervision tre
 
 ElixirDnstap uses a GenStage pipeline for efficient message processing:
 
+```mermaid
+graph LR
+  Host["Host app<br/>(log_client_query/6)"]
+  Producer["Producer<br/>(GenStage :producer)"]
+  BufferStage["BufferStage<br/>(GenStage :producer_consumer)"]
+  WriterConsumer["WriterConsumer<br/>(GenStage :consumer)"]
+  Writer["Writer.{File,TCP,UnixSocket}<br/>(GenServer)"]
+  Output["File / TCP / Unix socket"]
+
+  Producer --> BufferStage
+  BufferStage --> WriterConsumer
+  WriterConsumer --> Writer
+
+  Host -. "enqueue (GenStage.cast)" .-> Producer
+  WriterConsumer -. "write/1" .-> Writer
+  Writer -. "Frame Streams I/O" .-> Output
 ```
-DNS Messages → Producer → BufferStage → WriterConsumer → Writer (File/TCP/Unix Socket)
-                 ↓            ↓              ↓
-            Backpressure  Encoding    Frame Streams
-```
+
+Solid arrows (`-->`) are the GenStage subscription chain (downstream stage subscribes to upstream); dotted arrows are runtime relationships (message enqueue, write delegation, and I/O). All three GenStage stages plus the selected writer are started under `ElixirDnstap.Supervisor` (`:one_for_one`).
 
 ### Components
 
-- **Producer** - Receives DNS messages and manages backpressure
-- **BufferStage** - Encodes messages to Protocol Buffers and Frame Streams
-- **WriterConsumer** - Consumes encoded frames and writes to output
-- **Writers** - Handle specific output types (File, TCP, Unix Socket)
+- **Producer** (`:producer`) - Receives DNS messages from the host via `enqueue/2` (`GenStage.cast`) and manages demand-based backpressure with an internal queue.
+- **BufferStage** (`:producer_consumer`) - Encodes each message to a DNSTap **Protocol Buffers** payload via `ElixirDnstap.Encoder` (stateless transformation).
+- **WriterConsumer** (`:consumer`) - Delegates each encoded payload to the configured writer module via `writer_module.write/1`.
+- **Writer** (`Writer.File` / `Writer.TCP` / `Writer.UnixSocket`) - GenServers that wrap payloads in **Frame Streams** frames and perform the actual File / TCP / Unix-socket I/O.
+
+> Note: Protocol Buffers encoding happens in **BufferStage**, while **Frame Streams** framing is delegated to the **Writer** (see `ElixirDnstap.BufferStage`'s design note) — these are two distinct encoding steps, not one.
 
 ## Frame Streams Protocol
 
