@@ -206,6 +206,26 @@ defmodule ElixirDnstap.ProducerTest do
       assert is_integer(state.max_queue_size) and state.max_queue_size > 0
     end
 
+    test "falls back to the default max_queue_size on an invalid value" do
+      for bad <- [0, -1, "100", nil] do
+        {:producer, state} = Producer.init(max_queue_size: bad)
+        assert is_integer(state.max_queue_size) and state.max_queue_size > 0
+      end
+    end
+
+    test "keeps the tracked queue_len consistent with the actual queue" do
+      {:producer, state} = Producer.init(max_queue_size: 3)
+
+      # Fill past the cap, then drain with demand; queue_len must match at each step.
+      state = cast_n(state, 5)
+      assert state.queue_len == :queue.len(state.queue)
+      assert state.queue_len == 3
+
+      {:noreply, _events, state} = Producer.handle_demand(2, state)
+      assert state.queue_len == :queue.len(state.queue)
+      assert state.queue_len == 1
+    end
+
     test "drops messages instead of growing the queue past max_queue_size" do
       {:producer, state} = Producer.init(max_queue_size: 3)
 
