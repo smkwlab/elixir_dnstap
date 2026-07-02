@@ -24,6 +24,14 @@ defmodule ElixirDnstap.ProducerTest do
     query_time_nsec: 123_456_789
   }
 
+  # Cast `n` client_query messages through handle_cast/2, threading the state.
+  defp cast_n(state, n) do
+    Enum.reduce(1..n, state, fn _, s ->
+      {:noreply, _events, s2} = Producer.handle_cast({:client_query, @test_query_params}, s)
+      s2
+    end)
+  end
+
   describe "init/1" do
     test "initializes with empty queue and zero demand" do
       assert {:producer, state} = Producer.init([])
@@ -184,6 +192,52 @@ defmodule ElixirDnstap.ProducerTest do
 
       # Total demand (13) should be capped at max_demand (10)
       assert state2.demand == 10
+    end
+  end
+
+  describe "queue high-water mark (D-3)" do
+    test "initializes with a configurable max_queue_size" do
+      assert {:producer, state} = Producer.init(max_queue_size: 5)
+      assert state.max_queue_size == 5
+    end
+
+    test "has a finite positive default max_queue_size" do
+      {:producer, state} = Producer.init([])
+      assert is_integer(state.max_queue_size) and state.max_queue_size > 0
+    end
+
+    test "drops messages instead of growing the queue past max_queue_size" do
+      {:producer, state} = Producer.init(max_queue_size: 3)
+
+      # No demand, so every message queues until the cap is reached.
+      state = cast_n(state, 3)
+      assert :queue.len(state.queue) == 3
+      assert state.dropped == 0
+
+      # Beyond the cap, messages are dropped (tail drop), not queued.
+      state = cast_n(state, 4)
+      assert :queue.len(state.queue) == 3
+      assert state.dropped == 4
+    end
+
+    test "resumes queuing after demand drains the buffer" do
+      {:producer, state} = Producer.init(max_queue_size: 2)
+
+      state = cast_n(state, 2)
+      # One drop while full.
+      state = cast_n(state, 1)
+      assert state.dropped == 1
+      assert :queue.len(state.queue) == 2
+
+      # Demand drains the queue...
+      {:noreply, events, state} = Producer.handle_demand(2, state)
+      assert length(events) == 2
+      assert :queue.is_empty(state.queue)
+
+      # ...so new messages are accepted again, not dropped.
+      state = cast_n(state, 1)
+      assert :queue.len(state.queue) == 1
+      assert state.dropped == 1
     end
   end
 
