@@ -52,7 +52,7 @@ defmodule ElixirDnstap.MixProject do
     [
       # Required dependencies
       {:gen_stage, "~> 1.2"},
-      {:protobuf, "~> 0.15"},
+      {:protobuf, "~> 0.16"},
 
       # Development & Test dependencies
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
