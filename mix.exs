@@ -1,7 +1,7 @@
 defmodule ElixirDnstap.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @source_url "https://github.com/smkwlab/elixir_dnstap"
 
   def project do
@@ -52,7 +52,7 @@ defmodule ElixirDnstap.MixProject do
     [
       # Required dependencies
       {:gen_stage, "~> 1.2"},
-      {:protobuf, "~> 0.16"},
+      {:protobuf, "~> 0.17"},
 
       # Development & Test dependencies
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
