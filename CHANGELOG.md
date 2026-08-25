@@ -18,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OTP supervision tree
 - Configuration via Application config
 
+## [0.1.1] - 2026-08-26
+
+### Changed
+- Require protobuf `~> 0.17`. GHSA-rv48-qqj5-crxg covers `>= 0.8.0, < 0.16.1`,
+  so neither the old `~> 0.15` floor nor the `~> 0.16` that replaced it kept a
+  resolution out of the affected range.
+- Move the `ex_doc` dev dependency to `~> 0.40`.
+
 ## [0.1.0] - 2025-10-09
 
 ### Added
