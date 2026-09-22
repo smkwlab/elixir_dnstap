@@ -1,0 +1,29 @@
+# Security Workflow
+#
+# Uses the shared reusable workflow from smkwlab/.github.
+#
+# This repository went without it. The other four Elixir repositories in the
+# DNS ecosystem call it; this one only ever called elixir-ci, so neither half
+# of the shared security workflow ran here -- not the dependency audit and not
+# the secret scan. Being public, it had no native secret scanning either, so
+# there was no scanning of any kind. The gap was invisible because nothing
+# reports a workflow that does not exist.
+#
+# The weekly schedule matters as much as the pull request trigger: an advisory
+# published against a dependency that is not being changed reaches this
+# repository only on a scheduled run.
+
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 1 * * 1'
+
+jobs:
+  security:
+    uses: smkwlab/.github/.github/workflows/security.yml@v1
+    secrets: inherit
